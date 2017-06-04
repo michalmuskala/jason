@@ -14,8 +14,7 @@ defmodule Antidote.Encode do
   defp encode_map_function(%{maps: maps}) do
     case maps do
       :naive -> &encode_map_naive/4
-      # :strict -> &encode_map_strict/2
-      :strict -> fn _,_,_,_ -> raise "not supported" end
+      :strict -> &encode_map_strict/4
     end
   end
 
@@ -118,25 +117,53 @@ defmodule Antidote.Encode do
     encode_map.(value, encode_map, escape, opts)
   end
 
-  defp encode_map_naive(empty, _encode_map, _escape, _opts) when empty == %{} do
-    "{}"
-  end
-
   defp encode_map_naive(value, encode_map, escape, opts) do
-    [{key, value} | tail] = Map.to_list(value)
-    ["{\"", encode_key(key, escape), "\":",
-     encode_dispatch(value, encode_map, escape, opts)
-     | encode_map_naive_loop(tail, encode_map, escape, opts)]
+    case Map.to_list(value) do
+      [] -> "{}"
+      [{key, value} | tail] ->
+        ["{\"", encode_key(key, escape), "\":",
+         encode_dispatch(value, encode_map, escape, opts)
+         | encode_map_naive_loop(tail, encode_map, escape, opts)]
+    end
   end
 
   defp encode_map_naive_loop([], _encode_map, _escape, _opts) do
-    [?\}]
+    '}'
   end
 
   defp encode_map_naive_loop([{key, value} | tail], encode_map, escape, opts) do
     [",\"", encode_key(key, escape), "\":",
-     encode_dispatch(value, encode_map, escape, opts) |
-     encode_map_naive_loop(tail, encode_map, escape, opts)]
+     encode_dispatch(value, encode_map, escape, opts)
+     | encode_map_naive_loop(tail, encode_map, escape, opts)]
+  end
+
+  defp encode_map_strict(value, encode_map, escape, opts) do
+    case Map.to_list(value) do
+      [] -> "{}"
+      [{key, value} | tail] ->
+        key = encode_key(key, escape)
+        visited = %{key => []}
+        ["{\"", key, "\":",
+         encode_dispatch(value, encode_map, escape, opts)
+         | encode_map_strict_loop(tail, encode_map, escape, opts, visited)]
+    end
+  end
+
+  defp encode_map_strict_loop([], _encode_map, _escape, _opts, _visited) do
+    '}'
+  end
+
+  defp encode_map_strict_loop([{key, value} | tail], encode_map, escape, opts, visited) do
+    key = encode_key(key, escape)
+    case visited do
+      %{^key => _} ->
+        throw {:duplicate_key, key}
+      _ ->
+        visited = Map.put(visited, key, [])
+        [",\"", key, "\":",
+         encode_dispatch(value, encode_map, escape, opts)
+         | encode_map_strict_loop(tail, encode_map, escape, opts, visited)]
+    end
   end
 
   defp encode_struct(value, _opts, module)

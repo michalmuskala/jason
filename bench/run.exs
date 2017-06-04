@@ -1,5 +1,6 @@
 encode_jobs = %{
   "Antidote" => &Antidote.Encode.encode(&1, %{escape: :json, validate: false, maps: :naive}),
+  "Antidote strict" => &Antidote.Encode.encode(&1, %{escape: :json, validate: false, maps: :strict}),
   "Poison" => &Poison.encode_to_iodata!/1,
   # "JSX"    => &JSX.encode!/1,
   # "Tiny"   => &Tiny.encode!/1,
