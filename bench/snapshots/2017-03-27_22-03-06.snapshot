@@ -1,0 +1,6 @@
+duration:2.0;mem stats:false;sys mem stats:false
+module;test;tags;iterations;elapsed
+ParserBench	Poison		5000	7342649
+ParserBench	UTF-8 unescaping (Poison)		10000	2737871
+ParserBench	UTF-8 unescaping (jiffy)		50000	3065008
+ParserBench	jiffy		10000	5061467

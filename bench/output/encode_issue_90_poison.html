@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Benchee Report</title>
+  <meta charset="utf-8">
+  <meta http-equiv="content-type" content="text/html; charset=utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="assets/stylesheets/benchee.css">
+  <link rel="stylesheet" type="text/css" href="assets/fontello/css/fontello.css">
+</head>
+
+  <body>
+
+    <div class="header">
+  <h1>benchee report</h1>
+  
+  <span class="input-label">
+    Issue 90
+  </span>
+
+
+  <span class="version-note">
+  Elixir 1.5.0-dev, Erlang 20.0-rc2
+</span>
+
+</div>
+
+
+    <article>
+      <h2>
+        <a name="Poison"></a>
+        Poison
+        <a href="https://github.com/PragTob/benchee_html/wiki/Chart-Types#individual">
+          <i
+            class="benchee-help-icon icon-question-circle-o"
+            title="Graphs showing the individual run time distribution for Poison.
+Run Times Histpgram shows the distribution of occurences of specific run times in buckets.
+Raw Run Times shows all individual recorded run times in the order they were recorded in."
+          ></i>
+        </a>
+      </h2>
+
+      <section>
+        <h3>Data Table</h3>
+<table>
+  <thead>
+    <tr>
+      <th class="text-left">Name</th>
+      <th>Iterations per Second</th>
+      <th>Average</th>
+      <th>Deviation</th>
+      <th>median</th>
+      <th>minimum</th>
+      <th>maximum</th>
+      <th>Sample size</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+      <tr>
+        
+          <td class="text-left">Poison</td>
+        
+        <td>5.71</td>
+        <td>175113.45 μs</td>
+        <td>±2.85%</td>
+        <td>173862.00 μs</td>
+        <td>169079.00 μs</td>
+        <td>198507.00 μs</td>
+        <td>116</td>
+      </tr>
+    
+  </tbody>
+</table>
+
+      </section>
+
+      <section class="benchee-plot-container">
+        <div id="sorted-run-times" class="plot" data-job-name="Poison"></div>
+      </section>
+      <section class="benchee-plot-container">
+        <div id="raw-run-times" class="plot" data-job-name="Poison"></div>
+      </section>
+    </article>
+
+    <script src="assets/javascripts/plotly-1.20.5.min.js"></script>
+<script src="assets/javascripts/benchee.js"></script>
+
+
+    <script>
+      var measurements = {"statistics":{"std_dev_ratio":0.028459180003434604,"std_dev_ips":0.16251852889449075,"std_dev":4983.585145504893,"sample_size":116,"minimum":169079,"median":173862.0,"maximum":198507,"ips":5.710583680727174,"average":175113.44827586206},"run_times":[173030,173810,175137,172928,172138,177243,197249,178987,174900,173932,171925,174911,181897,174357,174336,183735,180625,180511,173541,172265,174878,170860,172592,169760,175111,178046,173347,170383,169977,173682,173876,173550,171745,171572,171697,191535,180197,173985,171593,173002,172431,179239,174292,175712,175500,173716,185856,171912,170215,172401,170475,172798,169904,173124,172204,175422,169079,175860,173185,176750,173221,172735,171585,175283,191361,182412,174577,173374,173947,173848,182028,174534,174378,180140,173948,181331,172479,172481,173749,169687,172373,170903,175462,175517,174275,169121,172475,172275,174756,174924,172772,171555,175202,198507,180090,175171,174174,172454,173670,180849,174544,176356,178869,181110,173355,173632,170853,173453,170369,173301,170188,175924,179025,174246,170050,175342]};
+      var runTimes     = measurements.run_times;
+
+      var inputHeadline = " (Issue 90)"
+
+      drawRawRunTimeCharts(runTimes, inputHeadline);
+      drawRunTimeHistograms(runTimes, inputHeadline);
+    </script>
+  </body>
+</html>

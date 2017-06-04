@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:300,400,600');
+/* http://www.colourlovers.com/palette/694574/everything_counts */
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 300;
+}
+
+article, .header {
+  margin: 10px auto;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.header h1 {
+  display: inline-block;
+  color: #4D1D4D;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  margin: 10px 0px 0px 0px;
+  padding: 20px 0px;
+}
+
+.version-note {
+  color: #4D1D4D;
+  font-size: 12px;
+  float: right;
+  margin: 10px 0px 0px 0px;
+  padding: 20px 0px;
+  line-height: 16px;
+}
+
+.input-label {
+  border: 1px solid #6f2a6f;
+  border-radius: 3px;
+  display: inline-block;
+  margin: 0px 3px;
+  color: #602460;
+  padding: 0px 5px;
+  font-size: 12px;
+}
+
+.benchee-help-icon {
+  margin-bottom: 10px;
+  margin-left: 5px;
+}
+
+article {
+  padding: 15px;
+  border: 1px solid #eee;
+  box-sizing: border-box;
+  margin: 20px auto;
+}
+
+h2 {
+  font-size: 28px;
+  line-height: 32px;
+  font-weight: 600;
+  border-bottom: 1px solid #ccc;
+  margin: 0px 0px 15px 0px;
+  padding: 5px 0px;
+}
+
+.benchee-help-icon {
+  margin-left: 0.3em;
+  font-size: 12px;
+  position: relative;
+  top: -0.8em;
+}
+
+h3 {
+  font-size: 20px;
+  line-height: 22px;
+  font-weight: 300;
+  color: #489C79;
+}
+
+table {
+  width: 100%;
+  margin: 15px 0px;
+  border-collapse: collapse;
+}
+
+th, td {
+  border-right: 1px solid #E7E9ED;
+  border-bottom: 1px solid #E7E9ED;
+  padding: 12px;
+}
+
+th {
+  text-align: right;
+  font-weight: 600;
+  background: rgba(231, 233, 237, 0.4);
+  border-bottom: 0px;
+}
+
+td {
+  text-align: right;
+}
+
+table tr td:first-child {
+  border-left: 1px solid #E7E9ED;
+}
+
+table tr:hover td {
+  background: #f7f7f7;
+}
+
+.text-left {
+  text-align: left;
+}
+
+a {
+  color: #05676E;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+a:hover {
+  color: #05676E;
+  text-decoration: none;
+}
+
+.benchee-plot-container {
+  display: flex;
+  justify-content: center;
+}
+
+.plot {
+  width: 100%
+}
+
+.job-count-1 {
+  max-width: 300px;
+}
+
+.job-count-2 {
+  max-width: 450px;
+}
+
+.job-count-3 {
+  max-width: 600px;
+}
+
+.job-count-4 {
+  max-width: 750px;
+}
+
+.job-count-5 {
+  max-width: 900px;
+}
+
+.job-count-6 {
+  max-width: 1100px;
+}

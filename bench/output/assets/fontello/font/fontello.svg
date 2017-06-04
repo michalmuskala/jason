@@ -1,0 +1,12 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg">
+<metadata>Copyright (C) 2016 by original authors @ fontello.com</metadata>
+<defs>
+<font id="fontello" horiz-adv-x="1000" >
+<font-face font-family="fontello" font-weight="400" font-stretch="normal" units-per-em="1000" ascent="850" descent="-150" />
+<missing-glyph horiz-adv-x="1000" />
+<glyph glyph-name="question-circle-o" unicode="&#xf29c;" d="M491 180v-89q0-8-5-13t-13-5h-89q-8 0-13 5t-5 13v89q0 8 5 13t13 5h89q8 0 13-5t5-13z m143 277q0-28-8-50t-26-39-29-24-33-20q-18-10-26-16t-14-13-7-16v-18q0-8-5-13t-13-5h-89q-8 0-13 5t-5 13v38q0 19 6 36t13 26 22 20 23 14 25 12q29 14 42 24t12 27q0 24-24 40t-54 17q-31 0-53-15-16-12-44-47-5-6-14-6-6 0-11 3l-60 46q-6 4-7 11t3 13q68 107 195 107 72 0 133-50t61-120z m-205 250q-73 0-139-28t-114-76-76-114-29-139 29-139 76-113 114-77 139-28 138 28 114 77 76 113 29 139-29 139-76 114-114 76-138 28z m428-357q0-117-57-215t-156-156-215-58-216 58-155 156-58 215 58 215 155 156 216 58 215-58 156-156 57-215z" horiz-adv-x="857.1" />
+</font>
+</defs>
+</svg>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Benchee Report</title>
+  <meta charset="utf-8">
+  <meta http-equiv="content-type" content="text/html; charset=utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="assets/stylesheets/benchee.css">
+  <link rel="stylesheet" type="text/css" href="assets/fontello/css/fontello.css">
+</head>
+
+  <body>
+
+    <div class="header">
+  <h1>benchee report</h1>
+  
+  <span class="input-label">
+    GovTrack
+  </span>
+
+
+  <span class="version-note">
+  Elixir 1.5.0-dev, Erlang 20.0-rc2
+</span>
+
+</div>
+
+
+    <article>
+      <h2>
+        <a name="jiffy"></a>
+        jiffy
+        <a href="https://github.com/PragTob/benchee_html/wiki/Chart-Types#individual">
+          <i
+            class="benchee-help-icon icon-question-circle-o"
+            title="Graphs showing the individual run time distribution for jiffy.
+Run Times Histpgram shows the distribution of occurences of specific run times in buckets.
+Raw Run Times shows all individual recorded run times in the order they were recorded in."
+          ></i>
+        </a>
+      </h2>
+
+      <section>
+        <h3>Data Table</h3>
+<table>
+  <thead>
+    <tr>
+      <th class="text-left">Name</th>
+      <th>Iterations per Second</th>
+      <th>Average</th>
+      <th>Deviation</th>
+      <th>median</th>
+      <th>minimum</th>
+      <th>maximum</th>
+      <th>Sample size</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+      <tr>
+        
+          <td class="text-left">jiffy</td>
+        
+        <td>18.30</td>
+        <td>54650.93 μs</td>
+        <td>±3.19%</td>
+        <td>54428.00 μs</td>
+        <td>50561.00 μs</td>
+        <td>64318.00 μs</td>
+        <td>368</td>
+      </tr>
+    
+  </tbody>
+</table>
+
+      </section>
+
+      <section class="benchee-plot-container">
+        <div id="sorted-run-times" class="plot" data-job-name="jiffy"></div>
+      </section>
+      <section class="benchee-plot-container">
+        <div id="raw-run-times" class="plot" data-job-name="jiffy"></div>
+      </section>
+    </article>
+
+    <script src="assets/javascripts/plotly-1.20.5.min.js"></script>
+<script src="assets/javascripts/benchee.js"></script>
+
+
+    <script>
+      var measurements = {"statistics":{"std_dev_ratio":0.03192988034644151,"std_dev_ips":0.5842513991091222,"std_dev":1744.9975481319366,"sample_size":368,"minimum":50561,"median":54428.0,"maximum":64318,"ips":18.297951410088366,"average":54650.926630434784},"run_times":[59779,51715,54145,52831,53933,55043,54534,51972,56425,53865,53730,53231,54157,53724,54243,53159,53210,53178,54066,53395,55810,57128,58218,56575,56688,59328,56446,57586,53878,55224,57139,55077,53586,54362,55405,53950,54915,54119,54762,54091,54842,54956,53656,55060,53991,54142,55034,54253,54902,55274,54680,54840,54880,54476,54700,55615,54394,54678,54104,54012,54763,55041,55212,53312,55024,56425,55411,55180,55749,55620,53768,54664,51985,55552,54637,54066,52416,54658,54739,54217,55165,53784,53515,54145,52866,58544,53739,53391,53091,52113,52962,54526,61818,52887,52992,55046,53235,54843,54327,54838,53843,53548,52490,56303,54922,53659,53484,52632,52877,57974,56451,56077,56236,51918,54529,56555,57035,64318,59708,54426,54654,54607,57206,53585,52415,53953,56709,56802,53798,53674,53285,53662,54773,52374,54423,55429,54488,54152,54666,53496,53425,55158,53872,55230,53458,54445,53965,54944,55652,56229,53524,54226,54834,55520,55204,54464,54372,53375,53178,53882,55631,54939,55021,55013,51166,53741,55016,54401,54428,56150,54083,54827,53809,51804,52759,54951,52683,54070,54234,53877,53678,53499,53208,53991,59487,52742,53035,53134,53645,55090,55213,53077,55346,54443,53018,54130,54390,53232,54162,53639,53393,54419,59020,60426,55513,54683,54964,55147,55807,62584,60875,53210,55533,54049,58418,54134,54896,53847,55358,53489,55197,54022,53617,53630,52653,54497,54325,56950,54461,53973,55531,54045,56645,54365,54508,56393,53709,52451,54805,54324,57161,55006,53995,53419,55314,54761,55810,53881,51896,55232,53281,55398,56457,55031,54941,54791,55670,52883,55211,53763,54009,53448,53906,55780,53656,53373,53873,55119,53155,58735,52713,54166,54428,51683,52656,53263,59717,51674,52668,54824,53748,53798,54439,53594,55110,54998,53578,55049,54143,54532,57002,54801,53579,56157,57882,58431,57984,54520,56121,55661,55327,62271,59550,55086,55308,54067,55278,53498,52816,54127,55909,53440,54131,56255,53875,54932,53798,52560,54472,54412,53938,54748,54546,54598,55654,55382,55211,55658,54429,53342,55076,53991,56220,54478,53105,54447,55223,54804,56434,54336,53286,54091,51603,54217,54900,50561,53722,53651,54349,51308,55007,55223,51889,54986,54271,55178,54852,54860,53879,54484,53076,56439,52715,53588,53218,51832,54049,53603]};
+      var runTimes     = measurements.run_times;
+
+      var inputHeadline = " (GovTrack)"
+
+      drawRawRunTimeCharts(runTimes, inputHeadline);
+      drawRunTimeHistograms(runTimes, inputHeadline);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Benchee Report</title>
+  <meta charset="utf-8">
+  <meta http-equiv="content-type" content="text/html; charset=utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="assets/stylesheets/benchee.css">
+  <link rel="stylesheet" type="text/css" href="assets/fontello/css/fontello.css">
+</head>
+
+  <body>
+
+    <div class="header">
+  <h1>benchee report</h1>
+  
+  <span class="input-label">
+    GovTrack
+  </span>
+
+
+  <span class="version-note">
+  Elixir 1.5.0-dev, Erlang 20.0-rc2
+</span>
+
+</div>
+
+
+    <article>
+      <h2>
+        <a name="Antidote"></a>
+        Antidote
+        <a href="https://github.com/PragTob/benchee_html/wiki/Chart-Types#individual">
+          <i
+            class="benchee-help-icon icon-question-circle-o"
+            title="Graphs showing the individual run time distribution for Antidote.
+Run Times Histpgram shows the distribution of occurences of specific run times in buckets.
+Raw Run Times shows all individual recorded run times in the order they were recorded in."
+          ></i>
+        </a>
+      </h2>
+
+      <section>
+        <h3>Data Table</h3>
+<table>
+  <thead>
+    <tr>
+      <th class="text-left">Name</th>
+      <th>Iterations per Second</th>
+      <th>Average</th>
+      <th>Deviation</th>
+      <th>median</th>
+      <th>minimum</th>
+      <th>maximum</th>
+      <th>Sample size</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+      <tr>
+        
+          <td class="text-left">Antidote</td>
+        
+        <td>9.46</td>
+        <td>105671.46 μs</td>
+        <td>±35.57%</td>
+        <td>92100.00 μs</td>
+        <td>39743.00 μs</td>
+        <td>192248.00 μs</td>
+        <td>192</td>
+      </tr>
+    
+  </tbody>
+</table>
+
+      </section>
+
+      <section class="benchee-plot-container">
+        <div id="sorted-run-times" class="plot" data-job-name="Antidote"></div>
+      </section>
+      <section class="benchee-plot-container">
+        <div id="raw-run-times" class="plot" data-job-name="Antidote"></div>
+      </section>
+    </article>
+
+    <script src="assets/javascripts/plotly-1.20.5.min.js"></script>
+<script src="assets/javascripts/benchee.js"></script>
+
+
+    <script>
+      var measurements = {"statistics":{"std_dev_ratio":0.3556602940650849,"std_dev_ips":3.365717665627165,"std_dev":37583.1419451197,"sample_size":192,"minimum":39743,"median":9.21e4,"maximum":192248,"ips":9.463293265486778,"average":105671.45833333333},"run_times":[55884,77782,139562,162236,173362,116816,79708,70272,77527,65641,79458,132373,169803,166986,145771,89802,76459,75301,64244,113977,149465,154554,49831,71344,71762,56029,76698,89516,151651,163208,166445,128639,89616,78578,75625,51360,98032,117568,128038,91122,70900,75990,54953,79871,112860,167838,174118,143759,53600,87377,134292,148627,172690,138121,89442,71494,76931,67837,103217,138651,140135,120566,129026,100389,74117,77472,57309,107864,160501,110575,69349,69563,76872,60885,78860,94520,178724,170557,177218,129451,69517,77196,77071,68049,116104,146270,103616,62851,70217,78191,52951,88592,119242,139107,151605,156938,39743,75949,139227,172718,192248,140525,89511,73008,80570,79100,124744,160434,160413,144941,102242,81251,75903,76556,64102,93159,142183,135350,59235,68452,80275,76113,96177,97836,115494,138851,179838,132328,75624,75293,78130,67266,135303,154966,102531,75391,74436,79305,88571,106416,124610,155229,173948,58814,73181,141226,170193,166621,118177,95878,74385,78430,55893,91877,154942,145226,138242,124843,90425,87403,76796,55515,66206,126548,144536,91571,74832,73610,58792,90240,118522,159278,137767,152961,136504,92323,75795,76193,53325,70502,146473,146777,94062,72313,73953,55450,85666,83845,116356,160085,124759,160031]};
+      var runTimes     = measurements.run_times;
+
+      var inputHeadline = " (GovTrack)"
+
+      drawRawRunTimeCharts(runTimes, inputHeadline);
+      drawRunTimeHistograms(runTimes, inputHeadline);
+    </script>
+  </body>
+</html>

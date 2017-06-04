@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Benchee Report</title>
+  <meta charset="utf-8">
+  <meta http-equiv="content-type" content="text/html; charset=utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" href="assets/stylesheets/benchee.css">
+  <link rel="stylesheet" type="text/css" href="assets/fontello/css/fontello.css">
+</head>
+
+  <body>
+
+    <div class="header">
+  <h1>benchee report</h1>
+  
+  <span class="input-label">
+    GovTrack
+  </span>
+
+
+  <span class="version-note">
+  Elixir 1.5.0-dev, Erlang 20.0-rc2
+</span>
+
+</div>
+
+
+    <article>
+      <h2>
+        <a name="Poison"></a>
+        Poison
+        <a href="https://github.com/PragTob/benchee_html/wiki/Chart-Types#individual">
+          <i
+            class="benchee-help-icon icon-question-circle-o"
+            title="Graphs showing the individual run time distribution for Poison.
+Run Times Histpgram shows the distribution of occurences of specific run times in buckets.
+Raw Run Times shows all individual recorded run times in the order they were recorded in."
+          ></i>
+        </a>
+      </h2>
+
+      <section>
+        <h3>Data Table</h3>
+<table>
+  <thead>
+    <tr>
+      <th class="text-left">Name</th>
+      <th>Iterations per Second</th>
+      <th>Average</th>
+      <th>Deviation</th>
+      <th>median</th>
+      <th>minimum</th>
+      <th>maximum</th>
+      <th>Sample size</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+      <tr>
+        
+          <td class="text-left">Poison</td>
+        
+        <td>3.13</td>
+        <td>319678.78 μs</td>
+        <td>±4.79%</td>
+        <td>321962.50 μs</td>
+        <td>289806.00 μs</td>
+        <td>368564.00 μs</td>
+        <td>64</td>
+      </tr>
+    
+  </tbody>
+</table>
+
+      </section>
+
+      <section class="benchee-plot-container">
+        <div id="sorted-run-times" class="plot" data-job-name="Poison"></div>
+      </section>
+      <section class="benchee-plot-container">
+        <div id="raw-run-times" class="plot" data-job-name="Poison"></div>
+      </section>
+    </article>
+
+    <script src="assets/javascripts/plotly-1.20.5.min.js"></script>
+<script src="assets/javascripts/benchee.js"></script>
+
+
+    <script>
+      var measurements = {"statistics":{"std_dev_ratio":0.04787727713616238,"std_dev_ips":0.14976682827979337,"std_dev":15305.349604456882,"sample_size":64,"minimum":289806,"median":321962.5,"maximum":368564,"ips":3.1281400538685267,"average":319678.78125},"run_times":[293331,311195,318589,322973,330887,321722,315407,303730,324848,302807,328224,322288,324957,356668,307029,329565,289806,318390,311926,323928,327955,326950,316967,306610,313782,302195,331011,327831,326835,348385,327027,322476,306565,296841,319997,323559,332422,342772,297145,310706,314791,307483,317762,325397,322203,368564,291442,325369,289842,311719,319819,329624,326969,327798,316897,309233,311121,299232,325939,323363,323612,357680,311990,335292]};
+      var runTimes     = measurements.run_times;
+
+      var inputHeadline = " (GovTrack)"
+
+      drawRawRunTimeCharts(runTimes, inputHeadline);
+      drawRunTimeHistograms(runTimes, inputHeadline);
+    </script>
+  </body>
+</html>
