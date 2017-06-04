@@ -3,7 +3,7 @@ defmodule Antidote.Encode do
   @type validate :: boolean
   @type maps :: :naive | :strict
 
-  @compile :native
+  # @compile :native
 
   def encode(value, opts) do
     escape = escape_function(opts)
@@ -64,9 +64,10 @@ defmodule Antidote.Encode do
     Antidote.Encoder.encode(value, opts)
   end
 
-  @compile {:inline,
-            do_encode_atom: 2, do_encode_string: 2, encode_integer: 1,
-            encode_float: 1, encode_list: 4, encode_struct: 3}
+  # @compile {:inline,
+  #           do_encode_atom: 2, do_encode_string: 2, encode_integer: 1,
+  #           encode_float: 1, encode_list: 4, encode_struct: 3}
+  @compile {:inline, encode_integer: 1, encode_float: 1}
 
   def encode_atom(atom, opts) do
     escape = escape_function(opts)
@@ -173,57 +174,78 @@ defmodule Antidote.Encode do
     [?\" | escape.(string, string, 0, :close)]
   end
 
-  escape_bytes = '"\\\n\t\r\f\b'
-  @escapes Enum.zip('"\\\n\t\r\f\b', '"\\ntrfb')
-  @control Enum.to_list(0..0x1F) -- escape_bytes
-  @regular Enum.to_list(0x20..0xFF) -- escape_bytes
+  z16 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  escapes = quote(do: [
+   # 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+    ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?b, ?t, ?n, ?u, ?f, ?r, ?u, ?u, # 00
+    ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, # 10
+     0,  0,?\",  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, # 20
+    unquote_splicing(z16), unquote_splicing(z16),                   # 30~4F
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,?\\,  0,  0,  0, # 50
+    unquote_splicing(z16), unquote_splicing(z16),                   # 60~7F
+    unquote_splicing(z16), unquote_splicing(z16),                   # 80~9F
+    unquote_splicing(z16), unquote_splicing(z16),                   # A0~BF
+    unquote_splicing(z16), unquote_splicing(z16),                   # C0~DF
+    unquote_splicing(z16), unquote_splicing(z16),                   # E0~FF
+  ])
 
-  for {byte, escape} <- @escapes do
-    defp escape_json_naive(<<unquote(byte), rest::bits>>, original, skip, close) do
-      [unquote(<<?\\, escape>>) | escape_json_naive(rest, original, skip + 1, close)]
-    end
-  end
-  for byte <- @control do
-    sequence = to_string(:io_lib.format("\\u~4.16.0B", [byte]))
-    defp escape_json_naive(<<unquote(byte), rest::bits>>, original, skip, close) do
-      [unquote(sequence) | escape_json_naive(rest, original, skip + 1, close)]
-    end
-  end
-  for byte <- @regular do
-    defp escape_json_naive(<<unquote(byte), rest::bits>>, original, skip, close) do
-      escape_json_naive_chunk(rest, original, skip, close, 1)
-    end
-  end
-  defp escape_json_naive(<<>>, _original, _skip, :close) do
-    [?\"]
-  end
-  defp escape_json_naive(<<>>, _original, _skip, :noclose) do
-    []
+  defp escape_json_naive(data, original, skip, close) do
+    escape_json_naive(data, [], original, skip, close)
   end
 
-  for {byte, escape} <- @escapes, byte >= 0x20 do
-    defp escape_json_naive_chunk(<<unquote(byte), rest::bits>>, original, skip, close, len) do
-      part = binary_part(original, skip, len)
-      new_original = binary_part(original, len, byte_size(original) - len)
-      [part, unquote(<<?\\, escape>>)
-       | escape_json_naive(rest, new_original, 0, close)]
+  for {action, byte} <- Enum.with_index(escapes) do
+    case action do
+      ?u ->
+        sequence = to_string(:io_lib.format("\\u~4.16.0B", [byte]))
+        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
+          acc = [acc | unquote(sequence)]
+          escape_json_naive(rest, acc, original, skip, close)
+        end
+      0 ->
+        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
+          escape_json_naive_chunk(rest, acc, original, skip, close, 1)
+        end
+      c ->
+        sequence = <<?\\, c>>
+        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
+          acc = [acc | unquote(sequence)]
+          escape_json_naive(rest, acc, original, skip, close)
+        end
     end
   end
-  defp escape_json_naive_chunk(<<byte, rest::bits>>, original, skip, close, len)
+
+  defp escape_json_naive(<<>>, acc, _original, _skip, :close) do
+    [acc, ?\"]
+  end
+  defp escape_json_naive(<<>>, acc, _original, _skip, :noclose) do
+    acc
+  end
+
+  defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, close, len)
        when byte >= 0x20 do
-    escape_json_naive_chunk(rest, original, skip, close, len + 1)
+    escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
   end
-  defp escape_json_naive_chunk(<<rest::bits>>, original, skip, close, len) do
+  defp escape_json_naive_chunk(<<?\", rest::bits>>, acc, original, skip, close, len) do
     part = binary_part(original, skip, len)
-    new_original = binary_part(original, len, byte_size(original) - len)
-    [part | escape_json_naive(rest, new_original, 0, close)]
+    acc = [acc, part | "\\\""]
+    escape_json_naive(rest, acc, original, skip + len, close)
   end
-  defp escape_json_naive_chunk(<<>>, original, skip, :close, len) do
+  defp escape_json_naive_chunk(<<?\\, rest::bits>>, acc, original, skip, close, len) do
     part = binary_part(original, skip, len)
-    [part, ?\"]
+    acc = [acc, part | "\\\\"]
+    escape_json_naive(rest, acc, original, skip + len, close)
   end
-  defp escape_json_naive_chunk(<<>>, original, skip, :noclose, len) do
-    binary_part(original, skip, len)
+  defp escape_json_naive_chunk(<<rest::bits>>, acc, original, skip, close, len) do
+    part = binary_part(original, skip, len)
+    acc = [acc | part]
+    escape_json_naive(rest, acc, original, skip + len, close)
+  end
+  defp escape_json_naive_chunk(<<>>, acc, original, skip, :close, len) do
+    part = binary_part(original, skip, len)
+    [acc, part, ?\"]
+  end
+  defp escape_json_naive_chunk(<<>>, acc, original, skip, :noclose, len) do
+    [acc | binary_part(original, skip, len)]
   end
 end
 
