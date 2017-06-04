@@ -249,8 +249,9 @@ defmodule Antidote.Encode do
     acc
   end
 
+  bytes = Enum.concat(0..0x1F, [0x22, 0x5c])
   defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, close, len)
-       when not (byte <= 0x1F or byte in [0x22, 0x5C]) do
+       when not (byte in unquote(bytes)) do
        # when byte >= 0x5D or byte in [0x20, 0x21] or byte in 0x23..0x5B do
     escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
   end
