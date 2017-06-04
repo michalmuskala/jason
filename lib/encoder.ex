@@ -8,7 +8,7 @@ defmodule Antidote.Encode do
   def encode(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
-    encode_dispatch(value, encode_map, escape, opts)
+    encode_dispatch(value, escape, encode_map, opts)
   end
 
   defp encode_map_function(%{maps: maps}) do
@@ -31,35 +31,35 @@ defmodule Antidote.Encode do
     end
   end
 
-  defp encode_dispatch(value, _encode_map, escape, _opts) when is_atom(value) do
+  defp encode_dispatch(value, escape, _encode_map, _opts) when is_atom(value) do
     do_encode_atom(value, escape)
   end
 
-  defp encode_dispatch(value, _encode_map, escape, _opts) when is_binary(value) do
+  defp encode_dispatch(value, escape, _encode_map, _opts) when is_binary(value) do
     do_encode_string(value, escape)
   end
 
-  defp encode_dispatch(value, _encode_map, _escape, _opts) when is_integer(value) do
+  defp encode_dispatch(value, _escape, _encode_map, _opts) when is_integer(value) do
     encode_integer(value)
   end
 
-  defp encode_dispatch(value, _encode_map, _escape, _opts) when is_float(value) do
+  defp encode_dispatch(value, _escape, _encode_map, _opts) when is_float(value) do
     encode_float(value)
   end
 
-  defp encode_dispatch(value, encode_map, escape, opts) when is_list(value) do
-    encode_list(value, encode_map, escape, opts)
+  defp encode_dispatch(value, escape, encode_map, opts) when is_list(value) do
+    encode_list(value, escape, encode_map, opts)
   end
 
-  defp encode_dispatch(%{__struct__: module} = value, _encode_map, _escape, opts) do
+  defp encode_dispatch(%{__struct__: module} = value, _escape, _encode_map, opts) do
     encode_struct(value, opts, module)
   end
 
-  defp encode_dispatch(value, encode_map, escape, opts) when is_map(value) do
-    encode_map.(value, encode_map, escape, opts)
+  defp encode_dispatch(value, escape, encode_map, opts) when is_map(value) do
+    encode_map.(value, escape, encode_map, opts)
   end
 
-  defp encode_dispatch(value, _encode_map, _escape, opts) do
+  defp encode_dispatch(value, _escape, _encode_map, opts) do
     Antidote.Encoder.encode(value, opts)
   end
 
@@ -90,62 +90,62 @@ defmodule Antidote.Encode do
   def encode_list(list, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
-    encode_list(list, encode_map, escape, opts)
+    encode_list(list, escape, encode_map, opts)
   end
 
-  defp encode_list([], _encode_map, _escape, _opts) do
+  defp encode_list([], _escape, _encode_map, _opts) do
     "[]"
   end
 
-  defp encode_list([head | tail], encode_map, escape, opts) do
-    [?\[, encode_dispatch(head, encode_map, escape, opts)
-     | encode_list_loop(tail, encode_map, escape, opts)]
+  defp encode_list([head | tail], escape, encode_map, opts) do
+    [?\[, encode_dispatch(head, escape, encode_map, opts)
+     | encode_list_loop(tail, escape, encode_map, opts)]
   end
 
-  defp encode_list_loop([], _encode_map, _escape, _opts) do
+  defp encode_list_loop([], _escape, _encode_map, _opts) do
     [?\]]
   end
 
-  defp encode_list_loop([head | tail], encode_map, escape, opts) do
-    [?,, encode_dispatch(head, encode_map, escape, opts)
-     | encode_list_loop(tail, encode_map, escape, opts)]
+  defp encode_list_loop([head | tail], escape, encode_map, opts) do
+    [?,, encode_dispatch(head, escape, encode_map, opts)
+     | encode_list_loop(tail, escape, encode_map, opts)]
   end
 
   def encode_map(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
-    encode_map.(value, encode_map, escape, opts)
+    encode_map.(value, escape, encode_map, opts)
   end
 
-  defp encode_map_naive(value, encode_map, escape, opts) do
+  defp encode_map_naive(value, escape, encode_map, opts) do
     case Map.to_list(value) do
       [] -> "{}"
       [{key, value} | tail] ->
         ["{\"", encode_key(key, escape), "\":",
-         encode_dispatch(value, encode_map, escape, opts)
-         | encode_map_naive_loop(tail, encode_map, escape, opts)]
+         encode_dispatch(value, escape, encode_map, opts)
+         | encode_map_naive_loop(tail, escape, encode_map, opts)]
     end
   end
 
-  defp encode_map_naive_loop([], _encode_map, _escape, _opts) do
+  defp encode_map_naive_loop([], _escape, _encode_map, _opts) do
     '}'
   end
 
-  defp encode_map_naive_loop([{key, value} | tail], encode_map, escape, opts) do
+  defp encode_map_naive_loop([{key, value} | tail], escape, encode_map, opts) do
     [",\"", encode_key(key, escape), "\":",
-     encode_dispatch(value, encode_map, escape, opts)
-     | encode_map_naive_loop(tail, encode_map, escape, opts)]
+     encode_dispatch(value, escape, encode_map, opts)
+     | encode_map_naive_loop(tail, escape, encode_map, opts)]
   end
 
-  defp encode_map_strict(value, encode_map, escape, opts) do
+  defp encode_map_strict(value, escape, encode_map, opts) do
     case Map.to_list(value) do
       [] -> "{}"
       [{key, value} | tail] ->
         key = encode_key(key, escape)
         visited = %{key => []}
         ["{\"", key, "\":",
-         encode_dispatch(value, encode_map, escape, opts)
-         | encode_map_strict_loop(tail, encode_map, escape, opts, visited)]
+         encode_dispatch(value, escape, encode_map, opts)
+         | encode_map_strict_loop(tail, escape, encode_map, opts, visited)]
     end
   end
 
@@ -153,7 +153,7 @@ defmodule Antidote.Encode do
     '}'
   end
 
-  defp encode_map_strict_loop([{key, value} | tail], encode_map, escape, opts, visited) do
+  defp encode_map_strict_loop([{key, value} | tail], escape, encode_map, opts, visited) do
     key = encode_key(key, escape)
     case visited do
       %{^key => _} ->
@@ -161,14 +161,15 @@ defmodule Antidote.Encode do
       _ ->
         visited = Map.put(visited, key, [])
         [",\"", key, "\":",
-         encode_dispatch(value, encode_map, escape, opts)
-         | encode_map_strict_loop(tail, encode_map, escape, opts, visited)]
+         encode_dispatch(value, escape, encode_map, opts)
+         | encode_map_strict_loop(tail, escape, encode_map, opts, visited)]
     end
   end
 
-  defp encode_struct(value, _opts, module)
-       when module in [Date, Time, NaiveDateTime, DateTime] do
-    [?\", module.to_iso8601(value), ?\"]
+  for module <- [Date, Time, NaiveDateTime, DateTime] do
+    defp encode_struct(value, _opts, unquote(module)) do
+      [?\", unquote(module).to_iso8601(value), ?\"]
+    end
   end
 
   defp encode_struct(value, _opts, Decimal) do
