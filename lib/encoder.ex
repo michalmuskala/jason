@@ -212,26 +212,32 @@ defmodule Antidote.Encode do
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,?\\,             # 50
   ] end
 
+  for {action, byte} <- Enum.with_index(escapes), action != 0 do
+    case action do
+      ?u ->
+        sequence = to_string(:io_lib.format("\\u~4.16.0B", [byte]))
+        defp escape(unquote(byte)), do: unquote(sequence)
+      c ->
+        sequence = <<?\\, c>>
+        defp escape(unquote(byte)), do: unquote(sequence)
+    end
+  end
+
   defp escape_json_naive(data, original, skip, close) do
     escape_json_naive(data, [], original, skip, close)
   end
 
   for {action, byte} <- Enum.with_index(escapes) do
     case action do
-      ?u ->
-        sequence = to_string(:io_lib.format("\\u~4.16.0B", [byte]))
-        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
-          acc = [acc | unquote(sequence)]
-          escape_json_naive(rest, acc, original, skip + 1, close)
-        end
       0 ->
-        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
+        defp escape_json_naive(<<byte, rest::bits>>, acc, original, skip, close)
+             when byte === unquote(byte) do
           escape_json_naive_chunk(rest, acc, original, skip, close, 1)
         end
-      c ->
-        sequence = <<?\\, c>>
-        defp escape_json_naive(<<unquote(byte), rest::bits>>, acc, original, skip, close) do
-          acc = [acc | unquote(sequence)]
+      _ ->
+        defp escape_json_naive(<<byte, rest::bits>>, acc, original, skip, close)
+             when byte === unquote(byte) do
+          acc = [acc | escape(byte)]
           escape_json_naive(rest, acc, original, skip + 1, close)
         end
     end
@@ -250,13 +256,15 @@ defmodule Antidote.Encode do
   for {action, byte} <- Enum.with_index(escapes) do
     case action do
       0 ->
-        defp escape_json_naive_chunk(<<unquote(byte), rest::bits>>, acc, original, skip, close, len) do
+        defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, close, len)
+             when byte === unquote(byte) do
           escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
         end
       _ ->
-        defp escape_json_naive_chunk(<<unquote(byte), rest::bits>>, acc, original, skip, close, len) do
+        defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, close, len)
+             when byte === unquote(byte) do
           part = binary_part(original, skip, len)
-          acc = [acc | part]
+          acc = [acc, part | escape(byte)]
           escape_json_naive(rest, acc, original, skip + len, close)
         end
     end
