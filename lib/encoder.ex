@@ -209,12 +209,7 @@ defmodule Antidote.Encode do
     ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, ?u, # 10
      0,  0,?\",  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, # 20
     unquote_splicing(z16), unquote_splicing(z16),                   # 30~4F
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,?\\,  0,  0,  0, # 50
-    unquote_splicing(z16), unquote_splicing(z16),                   # 60~7F
-    unquote_splicing(z16), unquote_splicing(z16),                   # 80~9F
-    unquote_splicing(z16), unquote_splicing(z16),                   # A0~BF
-    unquote_splicing(z16), unquote_splicing(z16),                   # C0~DF
-    unquote_splicing(z16), unquote_splicing(z16),                   # E0~FF
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,?\\,             # 50
   ] end
 
   defp escape_json_naive(data, original, skip, close) do
@@ -241,6 +236,9 @@ defmodule Antidote.Encode do
         end
     end
   end
+  defp escape_json_naive(<<_byte, rest::bits>>, acc, original, skip, close) do
+    escape_json_naive_chunk(rest, acc, original, skip, close, 1)
+  end
 
   defp escape_json_naive(<<>>, acc, _original, _skip, :close) do
     [acc, ?\"]
@@ -249,16 +247,22 @@ defmodule Antidote.Encode do
     acc
   end
 
-  bytes = Enum.concat(0..0x1F, [0x22, 0x5c])
-  defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, close, len)
-       when not (byte in unquote(bytes)) do
-       # when byte >= 0x5D or byte in [0x20, 0x21] or byte in 0x23..0x5B do
-    escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
+  for {action, byte} <- Enum.with_index(escapes) do
+    case action do
+      0 ->
+        defp escape_json_naive_chunk(<<unquote(byte), rest::bits>>, acc, original, skip, close, len) do
+          escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
+        end
+      _ ->
+        defp escape_json_naive_chunk(<<unquote(byte), rest::bits>>, acc, original, skip, close, len) do
+          part = binary_part(original, skip, len)
+          acc = [acc | part]
+          escape_json_naive(rest, acc, original, skip + len, close)
+        end
+    end
   end
-  defp escape_json_naive_chunk(<<rest::bits>>, acc, original, skip, close, len) do
-    part = binary_part(original, skip, len)
-    acc = [acc | part]
-    escape_json_naive(rest, acc, original, skip + len, close)
+  defp escape_json_naive_chunk(<<_byte, rest::bits>>, acc, original, skip, close, len) do
+    escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
   end
   defp escape_json_naive_chunk(<<>>, acc, original, skip, :close, len) do
     part = binary_part(original, skip, len)
