@@ -243,6 +243,7 @@ defmodule Antidote.Encode do
     end
   end
   defp escape_json_naive(<<_byte, rest::bits>>, acc, original, skip, close) do
+    _ = 1 + 1
     escape_json_naive_chunk(rest, acc, original, skip, close, 1)
   end
 
@@ -270,6 +271,7 @@ defmodule Antidote.Encode do
     end
   end
   defp escape_json_naive_chunk(<<_byte, rest::bits>>, acc, original, skip, close, len) do
+    _ = 1 + 1
     escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
   end
   defp escape_json_naive_chunk(<<>>, acc, original, skip, :close, len) do
