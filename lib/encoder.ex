@@ -404,7 +404,7 @@ defimpl Antidote.Encoder, for: BitString do
     Antidote.Encode.encode_string(binary, opts)
   end
 
-  def encode(bitstring, opts) do
+  def encode(bitstring, _opts) do
     raise Protocol.UndefinedError,
       protocol: @protocol,
       value: bitstring,
@@ -414,13 +414,13 @@ end
 
 defimpl Antidote.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
   def encode(value, _opts) do
-    [?\", @for.to_iso8601(value), \"]
+    [?\", @for.to_iso8601(value), ?\"]
   end
 end
 
 defimpl Antidote.Encoder, for: Decimal do
   def encode(value, _opts) do
-    [?\", Decimal.to_string(value), \"]
+    [?\", Decimal.to_string(value), ?\"]
   end
 end
 
