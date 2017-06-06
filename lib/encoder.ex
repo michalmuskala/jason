@@ -249,10 +249,8 @@ defmodule Antidote.Encode do
     end
   end
   defp escape_json_naive(<<_byte, rest::bits>>, acc, original, skip, close) do
-    _ = 1 + 1
     escape_json_naive_chunk(rest, acc, original, skip, close, 1)
   end
-
   defp escape_json_naive(<<>>, acc, _original, _skip, :close) do
     [acc, ?\"]
   end
@@ -277,7 +275,6 @@ defmodule Antidote.Encode do
     end
   end
   defp escape_json_naive_chunk(<<_byte, rest::bits>>, acc, original, skip, close, len) do
-    _ = 1 + 1
     escape_json_naive_chunk(rest, acc, original, skip, close, len + 1)
   end
   defp escape_json_naive_chunk(<<>>, acc, original, skip, :close, len) do
@@ -366,4 +363,69 @@ end
 
 defprotocol Antidote.Encoder do
   def encode(value, opts)
+end
+
+# The following implementations are formality - they are already covered
+# by  the main encoding mechanism above, but exist mostly for documentation
+# purposes and if anybody had the idea to call the protocol directly.
+
+defimpl Antidote.Encoder, for: Atom do
+  def encode(atom, opts) do
+    Antidote.Encode.encode_atom(atom, opts)
+  end
+end
+
+defimpl Antidote.Encoder, for: Integer do
+  def encode(integer, _opts) do
+    Antidote.Encode.encode_integer(integer)
+  end
+end
+
+defimpl Antidote.Encoder, for: Float do
+  def encode(float, _opts) do
+    Antidote.Encode.encode_float(float)
+  end
+end
+
+defimpl Antidote.Encoder, for: List do
+  def encode(list, opts) do
+    Antidote.Encode.encode_list(list, opts)
+  end
+end
+
+defimpl Antidote.Encoder, for: Map do
+  def encode(map, opts) do
+    Antidote.Encode.encode_map(map, opts)
+  end
+end
+
+defimpl Antidote.Encoder, for: BitString do
+  def encode(binary, opts) when is_binary(binary) do
+    Antidote.Encode.encode_string(binary, opts)
+  end
+
+  def encode(bitstring, opts) do
+    raise Protocol.UndefinedError,
+      protocol: @protocol,
+      value: bitstring,
+      description: "cannot encode a bitstring to JSON"
+  end
+end
+
+defimpl Antidote.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
+  def encode(value, _opts) do
+    [?\", @for.to_iso8601(value), \"]
+  end
+end
+
+defimpl Antidote.Encoder, for: Decimal do
+  def encode(value, _opts) do
+    [?\", Decimal.to_string(value), \"]
+  end
+end
+
+defimpl Antidote.Encoder, for: Antidote.Fragment do
+  def encode(%{iodata: iodata}, _opts) do
+    iodata
+  end
 end
