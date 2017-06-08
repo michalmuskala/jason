@@ -9,7 +9,7 @@ defmodule Antidote.Parser do
   whitespace = :orddict.from_list(Enum.map('\s\n\t\r', &{&1, :value}))
   # Having ?{ and ?[ confuses the syntax highlighter :(
   values = :orddict.from_list([{hd('{'), :object}, {hd('['), :array},
-                               {?-, :number_minus}, {?0, :number_zero},
+                               {?-, :number}, {?0, :number_zero},
                                {?\", :string}, {?n, :null},
                                {?t, :value_true}, {?f, :value_false}])
   merge = fn _k, _v1, _v2 -> raise "duplicate!" end
@@ -17,7 +17,7 @@ defmodule Antidote.Parser do
     &:orddict.merge(merge, &1, &2))
   dispatch = Enum.with_index(:array.to_list(:array.from_orddict(orddict, :error)))
 
-  for {action, byte} <- dispatch, action != :number do
+  for {action, byte} <- dispatch, not action in [:number, :number_zero] do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       unquote(action)(rest, original, skip + 1, stack)
     end
@@ -26,6 +26,9 @@ defmodule Antidote.Parser do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       number(rest, original, skip, stack, 1)
     end
+  end
+  defp value(<<?0, rest::bits>>, original, skip, stack) do
+    number_zero(rest, original, skip, stack)
   end
   defp value(<<rest::bits>>, original, skip, stack) do
     error(original, skip)
@@ -129,12 +132,14 @@ defmodule Antidote.Parser do
     continue(rest, original, skip + len, stack, float)
   end
 
-  defp number_minus(<<rest::bits>>, original, skip, stack) do
-    raise "not there"
+  defp number_zero(<<?., rest::bits>>, original, skip, stack) do
+    number_frac(rest, original, skip, stack, 2)
   end
-
+  defp number_zero(<<e, rest::bits>>, original, skip, stack) when e in 'eE' do
+    number_exp_copy(rest, original, skip + 2, stack, "0")
+  end
   defp number_zero(<<rest::bits>>, original, skip, stack) do
-    raise "not there"
+    continue(rest, original, skip + 1, stack, 0)
   end
 
   defp array(<<rest::bits>>, original, skip, stack) do
