@@ -148,7 +148,26 @@ defmodule Antidote.Parser do
   end
 
   defp array(<<rest::bits>>, original, skip, stack) do
-    raise "not there"
+    value(rest, original, skip, [:array, [] | stack])
+  end
+
+  whitespace = Enum.map(whitespace, &elem(&1, 0))
+
+  defp array(<<byte, rest::bits>>, original, skip, stack, value)
+       when byte in unquote(whitespace) do
+    array(rest, original, skip + 1, stack, value)
+  end
+  defp array(<<close, rest::bits>>, original, skip, stack, value)
+       when close === hd(']') do
+    [acc | stack] = stack
+    continue(rest, original, skip + 1, stack, :lists.reverse([value | acc]))
+  end
+  defp array(<<?,, rest::bits>>, original, skip, stack, value) do
+    [acc | stack] = stack
+    value(rest, original, skip + 1, [:array, [value | acc] | stack])
+  end
+  defp array(<<_rest::bits>>, original, skip, _stack, _value) do
+    error(original, skip)
   end
 
   defp object(<<rest::bits>>, original, skip, stack) do
@@ -273,10 +292,9 @@ defmodule Antidote.Parser do
   defp continue(<<rest::bits>>, original, skip, [next | stack], value) do
     case next do
       :terminate -> terminate(rest, original, skip, stack, value)
+      :array     -> array(rest, original, skip, stack, value)
     end
   end
-
-  whitespace = Enum.map(whitespace, &elem(&1, 0))
 
   defp terminate(<<byte, rest::bits>>, original, skip, stack, value)
        when byte in unquote(whitespace) do
