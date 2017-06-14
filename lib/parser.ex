@@ -289,8 +289,8 @@ defmodule Antidote.Parser do
   escapes = Enum.zip('\b\t\n\f\r"\\/', 'btnfr"\\/')
 
   for {byte, escape} <- escapes do
-    defp escape(<<unquote(byte), rest::bits>>, original, skip, stack, acc) do
-      string(rest, original, skip + 2, stack, [acc, unquote(escape)], 0)
+    defp escape(<<unquote(escape), rest::bits>>, original, skip, stack, acc) do
+      string(rest, original, skip + 2, stack, [acc, unquote(byte)], 0)
     end
   end
   defp escape(<<?u, rest::bits>>, original, skip, stack, acc) do
