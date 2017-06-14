@@ -1,10 +1,36 @@
 # TODO: guard against too large floats
+defmodule Antidote.Parser.Error do
+  @type t :: %__MODULE__{position: integer, data: String.t}
+
+  defexception [:position, :data]
+
+  def message(%{position: position, data: data}) when position == byte_size(data) do
+    "unexpected end of input at position #{position}"
+  end
+  def message(%{position: position, data: data}) do
+    case :binary.at(data, position) do
+      ascii when ascii < 127 ->
+        "unexpected byte #{inspect ascii, base: :hex} (#{[ascii]}) " <>
+          "at position #{position}"
+      byte ->
+        "unexpected byte #{inspect byte, base: :hex} " <>
+          "at position #{position}"
+    end
+  end
+end
 
 defmodule Antidote.Parser do
   import Bitwise
 
+  # @compile :native
+
   def parse(data) when is_binary(data) do
-    value(data, data, 0, [:terminate])
+    try do
+      value(data, data, 0, [:terminate])
+    catch
+      {:error, position} ->
+        raise Antidote.Parser.Error, position: position, data: data
+    end
   end
 
   number = :orddict.from_list(Enum.map('123456789', &{&1, :number}))
@@ -333,18 +359,8 @@ defmodule Antidote.Parser do
     error(original, skip)
   end
 
-  defp error(original, skip) when skip == byte_size(original) do
-    raise "unexpected EOF at position #{skip}"
-  end
-  defp error(original, skip) do
-    case :binary.at(original, skip) do
-      ascii when ascii < 127 ->
-        raise "unexpected byte #{inspect ascii, base: :hex} ('#{<<ascii>>}') " <>
-          "at position #{skip}"
-      byte ->
-        raise "unexpected byte #{inspect byte, base: :hex} " <>
-          "at position #{skip}"
-    end
+  defp error(_original, skip) do
+    throw {:error, skip}
   end
 
   defp continue(<<rest::bits>>, original, skip, [next | stack], value) do
