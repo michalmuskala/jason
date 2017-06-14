@@ -116,7 +116,7 @@ defmodule Antidote.Parser do
        when byte in '+-' do
     number_exp_sign(rest, original, skip, stack, prefix, 1)
   end
-  defp number_exp(<<_rest::bits>>, original, skip, _stack, _prefix) do
+  defp number_exp_copy(<<_rest::bits>>, original, skip, _stack, _prefix) do
     error(original, skip)
   end
 
