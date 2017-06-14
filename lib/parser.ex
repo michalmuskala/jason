@@ -36,7 +36,7 @@ defmodule Antidote.Parser do
   defp value(<<?0, rest::bits>>, original, skip, stack) do
     number_zero(rest, original, skip, stack)
   end
-  defp value(<<rest::bits>>, original, skip, stack) do
+  defp value(<<_rest::bits>>, original, skip, _stack) do
     error(original, skip)
   end
 
@@ -228,7 +228,7 @@ defmodule Antidote.Parser do
   defp key(<<?:, rest::bits>>, original, skip, stack, value) do
     value(rest, original, skip + 1, [:object, value | stack])
   end
-  defp key(<<_rest::bits>>, original, skip, stack, _value) do
+  defp key(<<_rest::bits>>, original, skip, _stack, _value) do
     error(original, skip)
   end
 
