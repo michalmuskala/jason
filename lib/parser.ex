@@ -11,6 +11,7 @@ defmodule Antidote.Parser do
   whitespace = :orddict.from_list(Enum.map('\s\n\t\r', &{&1, :value}))
   # Having ?{ and ?[ confuses the syntax highlighter :(
   values = :orddict.from_list([{hd('{'), :object}, {hd('['), :array},
+                               {hd(']'), :empty_array},
                                {?-, :number}, {?0, :number_zero},
                                {?\", :string}, {?n, :null},
                                {?t, :value_true}, {?f, :value_false}])
@@ -147,8 +148,19 @@ defmodule Antidote.Parser do
     continue(rest, original, skip + 1, stack, 0)
   end
 
-  defp array(<<rest::bits>>, original, skip, stack) do
+  @compile {:inline, array: 4}
+
+  defp array(rest, original, skip, stack) do
     value(rest, original, skip, [:array, [] | stack])
+  end
+
+  defp empty_array(rest, original, skip, stack) do
+    case stack do
+      [:array, [] | stack] ->
+        continue(rest, original, skip, stack, [])
+      _ ->
+        error(original, skip)
+    end
   end
 
   whitespace = Enum.map(whitespace, &elem(&1, 0))
@@ -170,8 +182,54 @@ defmodule Antidote.Parser do
     error(original, skip)
   end
 
+  @compile {:inline, object: 4}
+
   defp object(<<rest::bits>>, original, skip, stack) do
-    raise "not there"
+    key(rest, original, skip, [[] | stack])
+  end
+
+  defp object(<<byte, rest::bits>>, original, skip, stack, value)
+       when byte in unquote(whitespace) do
+    object(rest, original, skip + 1, stack, value)
+  end
+  defp object(<<close, rest::bits>>, original, skip, stack, value)
+       when close === hd('}') do
+    [key, acc | stack] = stack
+    final = [{key, value} | acc]
+    continue(rest, original, skip + 1, stack, :maps.from_list(final))
+  end
+  defp object(<<?,, rest::bits>>, original, skip, stack, value) do
+    [key, acc | stack] = stack
+    acc = [{key, value} | acc]
+    key(rest, original, skip + 1, [acc | stack])
+  end
+
+  defp key(<<byte, rest::bits>>, original, skip, stack)
+       when byte in unquote(whitespace) do
+    key(rest, original, skip + 1, stack)
+  end
+  defp key(<<close, rest::bits>>, original, skip, stack)
+       when close === hd('}') do
+    case stack do
+      [[] | stack] ->
+        continue(rest, original, skip + 1, stack, %{})
+      _ ->
+        error(original, skip)
+    end
+  end
+  defp key(<<?\", rest::bits>>, original, skip, stack) do
+    string(rest, original, skip + 1, [:key | stack], 0)
+  end
+
+  defp key(<<byte, rest::bits>>, original, skip, stack, value)
+       when byte in unquote(whitespace) do
+    key(rest, original, skip + 1, stack, value)
+  end
+  defp key(<<?:, rest::bits>>, original, skip, stack, value) do
+    value(rest, original, skip + 1, [:object, value | stack])
+  end
+  defp key(<<_rest::bits>>, original, skip, stack, _value) do
+    error(original, skip)
   end
 
   defp null(<<"ull", rest::bits>>, original, skip, stack) do
@@ -293,6 +351,8 @@ defmodule Antidote.Parser do
     case next do
       :terminate -> terminate(rest, original, skip, stack, value)
       :array     -> array(rest, original, skip, stack, value)
+      :key       -> key(rest, original, skip, stack, value)
+      :object    -> object(rest, original, skip, stack, value)
     end
   end
 
