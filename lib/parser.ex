@@ -1,4 +1,3 @@
-# TODO: guard against too large floats
 defmodule Antidote.ParseError do
   @type t :: %__MODULE__{position: integer, data: String.t}
 
@@ -282,7 +281,7 @@ defmodule Antidote.Parser do
   defp key(<<?\", rest::bits>>, original, skip, stack) do
     string(rest, original, skip + 1, [:key | stack], 0)
   end
-  defp key(<<_rest::bits>>, original, skip, stack) do
+  defp key(<<_rest::bits>>, original, skip, _stack) do
     error(original, skip)
   end
 
@@ -365,20 +364,31 @@ defmodule Antidote.Parser do
     error(original, skip + 1)
   end
 
-  defp escapeu(<<escape1::binary-4, ?\\, ?u, escape2::binary-4, rest::bits>>, original, skip, stack, acc) do
-    hi = try_parse_hex(escape1, skip)
-    lo = try_parse_hex(escape2, skip + 6)
-    if not hi in 0xD800..0xDBFF or not lo in 0xDC00..0xDFFF do
-      token = binary_part(original, skip, 12)
-      token_error(token, skip)
+  defp escapeu(<<escape::binary-4, rest::bits>>, original, skip, stack, acc) do
+    hi = try_parse_hex(escape, skip)
+    if not hi in 0xD800..0xDBFF do
+      codepoint = try_codepoint(hi, escape, skip)
+      string(rest, original, skip + 6, stack, [acc, codepoint], 0)
     else
-      codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
-      string(rest, original, skip + 12, stack, [acc, <<codepoint::utf8>>], 0)
+      escape_surrogate(rest, original, skip, stack, acc, hi)
     end
   end
-  defp escapeu(<<escape::binary-4, rest::bits>>, original, skip, stack, acc) do
-    codepoint = try_parse_hex(escape, skip)
-    string(rest, original, skip + 6, stack, [acc, <<codepoint::utf8>>], 0)
+  defp escape_surrogate(<<?\\, ?u, escape::binary-4, rest::bits>>, original, skip, stack, acc, hi) do
+    lo = try_parse_hex(escape, skip + 6)
+    if lo in 0xDC00..0xDFFF do
+      codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
+      string(rest, original, skip + 12, stack, [acc, <<codepoint::utf8>>], 0)
+    else
+      token = binary_part(original, skip, 12)
+      token_error(token, skip)
+    end
+  end
+
+  defp try_codepoint(codepoint, string, position) do
+    <<codepoint::utf8>>
+  rescue
+    ArgumentError ->
+      token_error("\\u" <> string, position)
   end
 
   defp try_parse_hex(string, position) do
