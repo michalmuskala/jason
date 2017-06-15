@@ -36,15 +36,12 @@ defmodule Antidote.ParserTest do
     assert_fail_with ~s("), "unexpected end of input at position 1"
     assert_fail_with ~s("\\"), "unexpected end of input at position 3"
     assert_fail_with ~s("\\k"), "unexpected byte at position 2: 0x6B ('k')"
-    # TODO: tighter validation of unicode
-    # assert_fail_with <<?\", 128, ?\">>, "unexpected end of input at position 1"
+    assert_fail_with <<?\", 128, ?\">>, "unexpected byte at position 1: 0x80"
     assert_fail_with ~s("\\u2603\\"), "unexpected end of input at position 9"
     assert_fail_with ~s("Here's a snowman for you: ☃. Good day!), "unexpected end of input at position 41"
     assert_fail_with ~s("𝄞), "unexpected end of input at position 5"
     assert_fail_with ~s(\u001F), "unexpected byte at position 0: 0x1F"
-    # invalid hex
     assert_fail_with ~s("\\ud8aa\\udcxx"), "unexpected sequence at position 7: \"\\\\udcxx\""
-    # invalid surrogate pair
     assert_fail_with ~s("\\ud8aa\\uda00"), "unexpected sequence at position 1: \"\\\\ud8aa\\\\uda00\""
     assert_fail_with ~s("\\uxxxx"), "unexpected sequence at position 1: \"\\\\uxxxx\""
 

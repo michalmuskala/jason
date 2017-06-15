@@ -325,9 +325,20 @@ defmodule Antidote.Parser do
     part = binary_part(original, skip, len)
     escape(rest, original, skip + len, stack, part)
   end
-  # TODO: validate more tightly
-  defp string(<<_byte, rest::bits>>, original, skip, stack, len) do
+  defp string(<<byte, rest::bits>>, original, skip, stack, len)
+       when byte <= 127 do
     string(rest, original, skip, stack, len + 1)
+  end
+  defp string(<<char::utf8, rest::bits>>, original, skip, stack, len)
+       when char <= 0x7FF do
+    string(rest, original, skip, stack, len + 2)
+  end
+  defp string(<<char::utf8, rest::bits>>, original, skip, stack, len)
+       when char <= 0xFFFF do
+    string(rest, original, skip, stack, len + 3)
+  end
+  defp string(<<_char::utf8, rest::bits>>, original, skip, stack, len) do
+    string(rest, original, skip, stack, len + 4)
   end
   defp string(<<_rest::bits>>, original, skip, _stack, len) do
     error(original, skip + len)
@@ -342,9 +353,20 @@ defmodule Antidote.Parser do
     part = binary_part(original, skip, len)
     escape(rest, original, skip + len, stack, [acc | part])
   end
-  # TODO: validate more tightly
-  defp string(<<_byte, rest::bits>>, original, skip, stack, acc, len) do
+  defp string(<<byte, rest::bits>>, original, skip, stack, acc, len)
+       when byte <= 127 do
     string(rest, original, skip, stack, acc, len + 1)
+  end
+  defp string(<<char::utf8, rest::bits>>, original, skip, stack, acc, len)
+       when char <= 0x7FF do
+    string(rest, original, skip, stack, acc, len + 2)
+  end
+  defp string(<<char::utf8, rest::bits>>, original, skip, stack, acc, len)
+       when char <= 0xFFFF do
+    string(rest, original, skip, stack, acc, len + 3)
+  end
+  defp string(<<_char::utf8, rest::bits>>, original, skip, stack, acc, len) do
+    string(rest, original, skip, stack, acc, len + 4)
   end
   defp string(<<_rest::bits>>, original, skip, _stack, _acc, len) do
     error(original, skip + len)
