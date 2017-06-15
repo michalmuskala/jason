@@ -1,20 +1,24 @@
 # TODO: guard against too large floats
-defmodule Antidote.Parser.Error do
+defmodule Antidote.ParseError do
   @type t :: %__MODULE__{position: integer, data: String.t}
 
-  defexception [:position, :data]
+  defexception [:position, :token, :data]
 
+  def message(%{position: position, token: token}) when is_binary(token) do
+    "unexpected sequence at position #{position}: #{inspect token}"
+  end
   def message(%{position: position, data: data}) when position == byte_size(data) do
     "unexpected end of input at position #{position}"
   end
   def message(%{position: position, data: data}) do
-    case :binary.at(data, position) do
-      ascii when ascii < 127 ->
-        "unexpected byte #{inspect ascii, base: :hex} (#{[ascii]}) " <>
-          "at position #{position}"
-      byte ->
-        "unexpected byte #{inspect byte, base: :hex} " <>
-          "at position #{position}"
+    byte = :binary.at(data, position)
+    str = <<byte>>
+    if String.printable?(str) do
+      "unexpected byte at position #{position}: " <>
+        "#{inspect byte, base: :hex} ('#{str}')"
+    else
+      "unexpected byte at position #{position}: " <>
+        "#{inspect byte, base: :hex}"
     end
   end
 end
@@ -22,14 +26,21 @@ end
 defmodule Antidote.Parser do
   import Bitwise
 
+  alias Antidote.ParseError
+
   # @compile :native
 
   def parse(data) when is_binary(data) do
     try do
       value(data, data, 0, [:terminate])
     catch
-      {:error, position} ->
-        raise Antidote.Parser.Error, position: position, data: data
+      {:position, position} ->
+        {:error, %ParseError{position: position, data: data}}
+      {:token, token, position} ->
+        {:error, %ParseError{token: token, position: position, data: data}}
+    else
+      value ->
+        {:ok, value}
     end
   end
 
@@ -38,7 +49,7 @@ defmodule Antidote.Parser do
   # Having ?{ and ?[ confuses the syntax highlighter :(
   values = :orddict.from_list([{hd('{'), :object}, {hd('['), :array},
                                {hd(']'), :empty_array},
-                               {?-, :number}, {?0, :number_zero},
+                               {?-, :number_minus}, {?0, :number_zero},
                                {?\", :string}, {?n, :null},
                                {?t, :value_true}, {?f, :value_false}])
   merge = fn _k, _v1, _v2 -> raise "duplicate!" end
@@ -46,7 +57,7 @@ defmodule Antidote.Parser do
     &:orddict.merge(merge, &1, &2))
   dispatch = Enum.with_index(:array.to_list(:array.from_orddict(orddict, :error)))
 
-  for {action, byte} <- dispatch, not action in [:number, :number_zero, :string] do
+  for {action, byte} <- dispatch, not action in [:number, :number_zero, :number_minus, :string] do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       unquote(action)(rest, original, skip + 1, stack)
     end
@@ -55,6 +66,9 @@ defmodule Antidote.Parser do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       number(rest, original, skip, stack, 1)
     end
+  end
+  defp value(<<?-, rest::bits>>, original, skip, stack) do
+    number_minus(rest, original, skip, stack)
   end
   defp value(<<?\", rest::bits>>, original, skip, stack) do
     string(rest, original, skip + 1, stack, 0)
@@ -67,6 +81,14 @@ defmodule Antidote.Parser do
   end
 
   digits = '0123456789'
+
+  defp number_minus(<<byte, rest::bits>>, original, skip, stack)
+       when byte in unquote(digits) do
+    number(rest, original, skip, stack, 2)
+  end
+  defp number_minus(<<_rest::bits>>, original, skip, _stack) do
+    error(original, skip + 1)
+  end
 
   defp number(<<byte, rest::bits>>, original, skip, stack, len)
        when byte in unquote(digits) do
@@ -101,7 +123,8 @@ defmodule Antidote.Parser do
     number_exp(rest, original, skip, stack, len + 1)
   end
   defp number_frac_cont(<<rest::bits>>, original, skip, stack, len) do
-    float = String.to_float(binary_part(original, skip, len))
+    token = binary_part(original, skip, len)
+    float = try_parse(token, token, skip)
     continue(rest, original, skip + len, stack, float)
   end
 
@@ -130,8 +153,16 @@ defmodule Antidote.Parser do
     number_exp_cont(rest, original, skip, stack, len + 1)
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, len) do
-    float = String.to_float(binary_part(original, skip, len))
+    token = binary_part(original, skip, len)
+    float = try_parse(token, token, skip)
     continue(rest, original, skip + len, stack, float)
+  end
+
+  defp try_parse(string, token, skip) do
+    String.to_float(string)
+  rescue
+    ArgumentError ->
+      token_error(token, skip)
   end
 
   defp number_exp_copy(<<byte, rest::bits>>, original, skip, stack, prefix)
@@ -159,9 +190,14 @@ defmodule Antidote.Parser do
     number_exp_cont(rest, original, skip, stack, prefix, len + 1)
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, prefix, len) do
-    string = prefix <> ".0e" <> binary_part(original, skip, len)
-    float = String.to_float(string)
-    continue(rest, original, skip + len, stack, float)
+    suffix = binary_part(original, skip, len)
+    string = prefix <> ".0e" <> suffix
+    prefix_size = byte_size(prefix)
+    initial_skip = skip - prefix_size - 1
+    final_skip = skip + len
+    token = binary_part(original, initial_skip, prefix_size + len + 1)
+    float = try_parse(string, token, initial_skip)
+    continue(rest, original, final_skip, stack, float)
   end
 
   defp number_zero(<<?., rest::bits>>, original, skip, stack) do
@@ -174,7 +210,7 @@ defmodule Antidote.Parser do
     continue(rest, original, skip + 1, stack, 0)
   end
 
-  @compile {:inline, array: 4}
+  @compile {:inline, array: 4, empty_array: 4}
 
   defp array(rest, original, skip, stack) do
     value(rest, original, skip, [:array, [] | stack])
@@ -185,7 +221,7 @@ defmodule Antidote.Parser do
       [:array, [] | stack] ->
         continue(rest, original, skip, stack, [])
       _ ->
-        error(original, skip)
+        error(original, skip - 1)
     end
   end
 
@@ -246,6 +282,9 @@ defmodule Antidote.Parser do
   defp key(<<?\", rest::bits>>, original, skip, stack) do
     string(rest, original, skip + 1, [:key | stack], 0)
   end
+  defp key(<<_rest::bits>>, original, skip, stack) do
+    error(original, skip)
+  end
 
   defp key(<<byte, rest::bits>>, original, skip, stack, value)
        when byte in unquote(whitespace) do
@@ -291,9 +330,9 @@ defmodule Antidote.Parser do
   defp string(<<_byte, rest::bits>>, original, skip, stack, len) do
     string(rest, original, skip, stack, len + 1)
   end
-  # defp string(<<_rest::bits>>, original, skip, _stack, _len) do
-  #   error(original, skip)
-  # end
+  defp string(<<_rest::bits>>, original, skip, _stack, len) do
+    error(original, skip + len)
+  end
 
   defp string(<<?\", rest::bits>>, original, skip, stack, acc, len) do
     last = binary_part(original, skip, len)
@@ -308,9 +347,9 @@ defmodule Antidote.Parser do
   defp string(<<_byte, rest::bits>>, original, skip, stack, acc, len) do
     string(rest, original, skip, stack, acc, len + 1)
   end
-  # defp string(<<_rest::bits>>, original, skip, _stack, _acc, _len) do
-  #   error(original, skip)
-  # end
+  defp string(<<_rest::bits>>, original, skip, _stack, _acc, len) do
+    error(original, skip + len)
+  end
 
   escapes = Enum.zip('\b\t\n\f\r"\\/', 'btnfr"\\/')
 
@@ -323,44 +362,42 @@ defmodule Antidote.Parser do
     escapeu(rest, original, skip, stack, acc)
   end
   defp escape(<<_rest::bits>>, original, skip, _stack, _acc) do
-    error(original, skip)
+    error(original, skip + 1)
   end
 
-  defp escapeu(<<a1, b1, c1, d1, ?\\, ?u, a2, b2, c2, d2, rest::bits>>, original, skip, stack, acc)
-       when a1 in 'dD' and a2 in 'dD'
-       and (b1 in '89abAB')
-       and (b2 in ?c..?f or b2 in ?C..?F) do
-    try do
-      hi = List.to_integer([a1, b1, c1, d1], 16)
-      lo = List.to_integer([a2, b2, c2, d2], 16)
-      {hi, lo}
-    rescue
-      ArgumentError ->
-        raise "error"
+  defp escapeu(<<escape1::binary-4, ?\\, ?u, escape2::binary-4, rest::bits>>, original, skip, stack, acc) do
+    hi = try_parse_hex(escape1, skip)
+    lo = try_parse_hex(escape2, skip + 6)
+    if not hi in 0xD800..0xDBFF or not lo in 0xDC00..0xDFFF do
+      token = binary_part(original, skip, 12)
+      token_error(token, skip)
     else
-      {hi, lo} ->
-        codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
-        string(rest, original, skip + 12, stack, [acc, <<codepoint::utf8>>], 0)
+      codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
+      string(rest, original, skip + 12, stack, [acc, <<codepoint::utf8>>], 0)
     end
   end
   defp escapeu(<<escape::binary-4, rest::bits>>, original, skip, stack, acc) do
-    try do
-      String.to_integer(escape, 16)
-    rescue
-      ArgumentError ->
-        raise "error"
-    else
-      codepoint ->
-        string(rest, original, skip + 6, stack, [acc, <<codepoint::utf8>>], 0)
-    end
+    codepoint = try_parse_hex(escape, skip)
+    string(rest, original, skip + 6, stack, [acc, <<codepoint::utf8>>], 0)
+  end
+
+  defp try_parse_hex(string, position) do
+    String.to_integer(string, 16)
+  rescue
+    ArgumentError ->
+      token_error("\\u" <> string, position)
   end
 
   defp error(<<_rest::bits>>, original, skip, _stack) do
-    error(original, skip)
+    error(original, skip - 1)
   end
 
   defp error(_original, skip) do
-    throw {:error, skip}
+    throw {:position, skip}
+  end
+
+  defp token_error(token, position) do
+    throw {:token, token, position}
   end
 
   defp continue(<<rest::bits>>, original, skip, [next | stack], value) do
