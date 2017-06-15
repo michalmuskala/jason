@@ -25,13 +25,20 @@ end
 defmodule Antidote.Parser do
   import Bitwise
 
-  alias Antidote.ParseError
+  alias Antidote.{ParseError, Codegen}
 
   # @compile :native
 
+  # We use integers instead of atoms to take advantage of the jump table
+  # optimization
+  @terminate 0
+  @array     1
+  @key       2
+  @object    3
+
   def parse(data) when is_binary(data) do
     try do
-      value(data, data, 0, [:terminate])
+      value(data, data, 0, [@terminate])
     catch
       {:position, position} ->
         {:error, %ParseError{position: position, data: data}}
@@ -43,25 +50,16 @@ defmodule Antidote.Parser do
     end
   end
 
-  number = :orddict.from_list(Enum.map('123456789', &{&1, :number}))
-  whitespace = :orddict.from_list(Enum.map('\s\n\t\r', &{&1, :value}))
-  # Having ?{ and ?[ confuses the syntax highlighter :(
-  values = :orddict.from_list([{hd('{'), :object}, {hd('['), :array},
-                               {hd(']'), :empty_array},
-                               {?-, :number_minus}, {?0, :number_zero},
-                               {?\", :string}, {?n, :null},
-                               {?t, :value_true}, {?f, :value_false}])
-  merge = fn _k, _v1, _v2 -> raise "duplicate!" end
-  orddict = Enum.reduce([number, whitespace, values],
-    &:orddict.merge(merge, &1, &2))
-  dispatch = Enum.with_index(:array.to_list(:array.from_orddict(orddict, :error)))
+  ranges = [{?0..?9, :skip}, {?-, :skip}, {?\", :skip}, {'\s\n\t\r', :value},
+            {hd('{'), :object}, {hd('['), :array}, {hd(']'), :empty_array},
+            {?n, :null}, {?t, :value_true}, {?f, :value_false}]
 
-  for {action, byte} <- dispatch, not action in [:number, :number_zero, :number_minus, :string] do
+  for {byte, action} <- Codegen.jump_table(ranges, :error), action != :skip do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       unquote(action)(rest, original, skip + 1, stack)
     end
   end
-  for {:number, byte} <- dispatch do
+  for byte <- ?1..?9 do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack) do
       number(rest, original, skip, stack, 1)
     end
@@ -123,7 +121,7 @@ defmodule Antidote.Parser do
   end
   defp number_frac_cont(<<rest::bits>>, original, skip, stack, len) do
     token = binary_part(original, skip, len)
-    float = try_parse(token, token, skip)
+    float = try_parse_float(token, token, skip)
     continue(rest, original, skip + len, stack, float)
   end
 
@@ -153,15 +151,8 @@ defmodule Antidote.Parser do
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, len) do
     token = binary_part(original, skip, len)
-    float = try_parse(token, token, skip)
+    float = try_parse_float(token, token, skip)
     continue(rest, original, skip + len, stack, float)
-  end
-
-  defp try_parse(string, token, skip) do
-    String.to_float(string)
-  rescue
-    ArgumentError ->
-      token_error(token, skip)
   end
 
   defp number_exp_copy(<<byte, rest::bits>>, original, skip, stack, prefix)
@@ -195,7 +186,7 @@ defmodule Antidote.Parser do
     initial_skip = skip - prefix_size - 1
     final_skip = skip + len
     token = binary_part(original, initial_skip, prefix_size + len + 1)
-    float = try_parse(string, token, initial_skip)
+    float = try_parse_float(string, token, initial_skip)
     continue(rest, original, final_skip, stack, float)
   end
 
@@ -212,86 +203,127 @@ defmodule Antidote.Parser do
   @compile {:inline, array: 4, empty_array: 4}
 
   defp array(rest, original, skip, stack) do
-    value(rest, original, skip, [:array, [] | stack])
+    value(rest, original, skip, [@array, [] | stack])
   end
 
   defp empty_array(rest, original, skip, stack) do
     case stack do
-      [:array, [] | stack] ->
+      [@array, [] | stack] ->
         continue(rest, original, skip, stack, [])
       _ ->
         error(original, skip - 1)
     end
   end
 
-  whitespace = Enum.map(whitespace, &elem(&1, 0))
+  ranges = [{'\s\n\t\r', :array}, {hd(']'), :continue}, {?,, :value}]
+  array_jt = Codegen.jump_table(ranges, :error)
 
-  defp array(<<byte, rest::bits>>, original, skip, stack, value)
-       when byte in unquote(whitespace) do
-    array(rest, original, skip + 1, stack, value)
-  end
-  defp array(<<close, rest::bits>>, original, skip, stack, value)
-       when close === hd(']') do
-    [acc | stack] = stack
-    continue(rest, original, skip + 1, stack, :lists.reverse([value | acc]))
-  end
-  defp array(<<?,, rest::bits>>, original, skip, stack, value) do
-    [acc | stack] = stack
-    value(rest, original, skip + 1, [:array, [value | acc] | stack])
-  end
+  Enum.map(array_jt, fn
+    {byte, :array} ->
+      defp array(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        array(rest, original, skip + 1, stack, value)
+      end
+    {byte, :continue} ->
+      defp array(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        [acc | stack] = stack
+        continue(rest, original, skip + 1, stack, :lists.reverse([value | acc]))
+      end
+    {byte, :value} ->
+      defp array(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        [acc | stack] = stack
+        value(rest, original, skip + 1, [@array, [value | acc] | stack])
+      end
+    {byte, :error} ->
+      defp array(<<unquote(byte), _rest::bits>>, original, skip, _stack, _value) do
+        error(original, skip)
+      end
+  end)
   defp array(<<_rest::bits>>, original, skip, _stack, _value) do
     error(original, skip)
   end
 
   @compile {:inline, object: 4}
 
-  defp object(<<rest::bits>>, original, skip, stack) do
+  defp object(rest, original, skip, stack) do
     key(rest, original, skip, [[] | stack])
   end
 
-  defp object(<<byte, rest::bits>>, original, skip, stack, value)
-       when byte in unquote(whitespace) do
-    object(rest, original, skip + 1, stack, value)
-  end
-  defp object(<<close, rest::bits>>, original, skip, stack, value)
-       when close === hd('}') do
-    [key, acc | stack] = stack
-    final = [{key, value} | acc]
-    continue(rest, original, skip + 1, stack, :maps.from_list(final))
-  end
-  defp object(<<?,, rest::bits>>, original, skip, stack, value) do
-    [key, acc | stack] = stack
-    acc = [{key, value} | acc]
-    key(rest, original, skip + 1, [acc | stack])
+  ranges = [{'\s\n\t\r', :object}, {hd('}'), :continue}, {?,, :key}]
+  object_jt = Codegen.jump_table(ranges, :error)
+
+  Enum.map(object_jt, fn
+    {byte, :object} ->
+      defp object(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        object(rest, original, skip + 1, stack, value)
+      end
+    {byte, :continue} ->
+      defp object(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        [key, acc | stack] = stack
+        final = [{key, value} | acc]
+        continue(rest, original, skip + 1, stack, :maps.from_list(final))
+      end
+    {byte, :key} ->
+      defp object(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        [key, acc | stack] = stack
+        acc = [{key, value} | acc]
+        key(rest, original, skip + 1, [acc | stack])
+      end
+    {byte, :error} ->
+      defp object(<<unquote(byte), _rest::bits>>, original, skip, _stack, _value) do
+        error(original, skip)
+      end
+  end)
+  defp object(<<_rest::bits>>, original, skip, _stack, _value) do
+    error(original, skip)
   end
 
-  defp key(<<byte, rest::bits>>, original, skip, stack)
-       when byte in unquote(whitespace) do
-    key(rest, original, skip + 1, stack)
-  end
-  defp key(<<close, rest::bits>>, original, skip, stack)
-       when close === hd('}') do
-    case stack do
-      [[] | stack] ->
-        continue(rest, original, skip + 1, stack, %{})
-      _ ->
+  ranges = [{'\s\n\t\r', :key}, {hd('}'), :continue}, {?\", :string}]
+  key_jt = Codegen.jump_table(ranges, :error)
+
+  Enum.map(key_jt, fn
+    {byte, :key} ->
+      defp key(<<unquote(byte), rest::bits>>, original, skip, stack) do
+        key(rest, original, skip + 1, stack)
+      end
+    {byte, :continue} ->
+      defp key(<<unquote(byte), rest::bits>>, original, skip, stack) do
+        case stack do
+          [[] | stack] ->
+            continue(rest, original, skip + 1, stack, %{})
+          _ ->
+            error(original, skip)
+        end
+      end
+    {byte, :string} ->
+      defp key(<<unquote(byte), rest::bits>>, original, skip, stack) do
+        string(rest, original, skip + 1, [@key | stack], 0)
+      end
+    {byte, :error} ->
+      defp key(<<unquote(byte), _rest::bits>>, original, skip, _stack) do
         error(original, skip)
-    end
-  end
-  defp key(<<?\", rest::bits>>, original, skip, stack) do
-    string(rest, original, skip + 1, [:key | stack], 0)
-  end
+      end
+  end)
   defp key(<<_rest::bits>>, original, skip, _stack) do
     error(original, skip)
   end
 
-  defp key(<<byte, rest::bits>>, original, skip, stack, value)
-       when byte in unquote(whitespace) do
-    key(rest, original, skip + 1, stack, value)
-  end
-  defp key(<<?:, rest::bits>>, original, skip, stack, value) do
-    value(rest, original, skip + 1, [:object, value | stack])
-  end
+  ranges = [{'\s\n\t\r', :key}, {?:, :value}]
+  key_jt = Codegen.jump_table(ranges, :error)
+
+  Enum.map(key_jt, fn
+    {byte, :key} ->
+      defp key(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        key(rest, original, skip + 1, stack, value)
+      end
+    {byte, :value} ->
+      defp key(<<unquote(byte), rest::bits>>, original, skip, stack, value) do
+        value(rest, original, skip + 1, [@object, value | stack])
+      end
+    {byte, :error} ->
+      defp key(<<unquote(byte), _rest::bits>>, original, skip, _stack, _value) do
+        error(original, skip)
+      end
+  end)
   defp key(<<_rest::bits>>, original, skip, _stack, _value) do
     error(original, skip)
   end
@@ -317,18 +349,24 @@ defmodule Antidote.Parser do
     error(original, skip)
   end
 
-  defp string(<<?\", rest::bits>>, original, skip, stack, len) do
-    string = binary_part(original, skip, len)
-    continue(rest, original, skip + len + 1, stack, string)
-  end
-  defp string(<<?\\, rest::bits>>, original, skip, stack, len) do
-    part = binary_part(original, skip, len)
-    escape(rest, original, skip + len, stack, part)
-  end
-  defp string(<<byte, rest::bits>>, original, skip, stack, len)
-       when byte <= 127 do
-    string(rest, original, skip, stack, len + 1)
-  end
+  string_jt = Codegen.jump_table([{?\", :continue}, {?\\, :escape}], :string, 128)
+
+  Enum.map(string_jt, fn
+    {byte, :continue} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, len) do
+        string = binary_part(original, skip, len)
+        continue(rest, original, skip + len + 1, stack, string)
+      end
+    {byte, :escape} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, len) do
+        part = binary_part(original, skip, len)
+        escape(rest, original, skip + len, stack, part)
+      end
+    {byte, :string} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, len) do
+        string(rest, original, skip, stack, len + 1)
+      end
+  end)
   defp string(<<char::utf8, rest::bits>>, original, skip, stack, len)
        when char <= 0x7FF do
     string(rest, original, skip, stack, len + 2)
@@ -344,19 +382,23 @@ defmodule Antidote.Parser do
     error(original, skip + len)
   end
 
-  defp string(<<?\", rest::bits>>, original, skip, stack, acc, len) do
-    last = binary_part(original, skip, len)
-    string = IO.iodata_to_binary([acc | last])
-    continue(rest, original, skip + len + 1, stack, string)
-  end
-  defp string(<<?\\, rest::bits>>, original, skip, stack, acc, len) do
-    part = binary_part(original, skip, len)
-    escape(rest, original, skip + len, stack, [acc | part])
-  end
-  defp string(<<byte, rest::bits>>, original, skip, stack, acc, len)
-       when byte <= 127 do
-    string(rest, original, skip, stack, acc, len + 1)
-  end
+  Enum.map(string_jt, fn
+    {byte, :continue} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, acc, len) do
+        last = binary_part(original, skip, len)
+        string = IO.iodata_to_binary([acc | last])
+        continue(rest, original, skip + len + 1, stack, string)
+      end
+    {byte, :escape} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, acc, len) do
+        part = binary_part(original, skip, len)
+        escape(rest, original, skip + len, stack, [acc | part])
+      end
+    {byte, :string} ->
+      defp string(<<unquote(byte), rest::bits>>, original, skip, stack, acc, len) do
+        string(rest, original, skip, stack, acc, len + 1)
+      end
+  end)
   defp string(<<char::utf8, rest::bits>>, original, skip, stack, acc, len)
        when char <= 0x7FF do
     string(rest, original, skip, stack, acc, len + 2)
@@ -395,6 +437,10 @@ defmodule Antidote.Parser do
       escape_surrogate(rest, original, skip, stack, acc, hi)
     end
   end
+  defp escapeu(<<_rest::bits>>, original, skip, _stack, _acc) do
+    error(original, skip + 2)
+  end
+
   defp escape_surrogate(<<?\\, ?u, escape::binary-4, rest::bits>>, original, skip, stack, acc, hi) do
     lo = try_parse_hex(escape, skip + 6)
     if lo in 0xDC00..0xDFFF do
@@ -404,6 +450,9 @@ defmodule Antidote.Parser do
       token = binary_part(original, skip, 12)
       token_error(token, skip)
     end
+  end
+  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
+    error(original, skip + 10)
   end
 
   defp try_codepoint(codepoint, string, position) do
@@ -420,6 +469,13 @@ defmodule Antidote.Parser do
       token_error("\\u" <> string, position)
   end
 
+  defp try_parse_float(string, token, skip) do
+    String.to_float(string)
+  rescue
+    ArgumentError ->
+      token_error(token, skip)
+  end
+
   defp error(<<_rest::bits>>, original, skip, _stack) do
     error(original, skip - 1)
   end
@@ -434,15 +490,15 @@ defmodule Antidote.Parser do
 
   defp continue(<<rest::bits>>, original, skip, [next | stack], value) do
     case next do
-      :terminate -> terminate(rest, original, skip, stack, value)
-      :array     -> array(rest, original, skip, stack, value)
-      :key       -> key(rest, original, skip, stack, value)
-      :object    -> object(rest, original, skip, stack, value)
+      @terminate -> terminate(rest, original, skip, stack, value)
+      @array     -> array(rest, original, skip, stack, value)
+      @key       -> key(rest, original, skip, stack, value)
+      @object    -> object(rest, original, skip, stack, value)
     end
   end
 
   defp terminate(<<byte, rest::bits>>, original, skip, stack, value)
-       when byte in unquote(whitespace) do
+       when byte in '\s\n\r\t' do
     terminate(rest, original, skip + 1, stack, value)
   end
   defp terminate(<<>>, _original, _skip, _stack, value) do
