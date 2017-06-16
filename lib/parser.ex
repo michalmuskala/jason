@@ -464,7 +464,7 @@ defmodule Antidote.Parser do
     end
   end
   defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
-    error(original, skip + 10)
+    error(original, skip + 6)
   end
 
   defp try_codepoint(codepoint, string, position) do
