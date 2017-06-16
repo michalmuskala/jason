@@ -349,7 +349,8 @@ defmodule Antidote.Parser do
     error(original, skip)
   end
 
-  string_jt = Codegen.jump_table([{?\", :continue}, {?\\, :escape}], :string, 128)
+  ranges = [{?\", :continue}, {?\\, :escape}, {0x00..0x1F, :error}]
+  string_jt = Codegen.jump_table(ranges, :string, 128)
 
   Enum.map(string_jt, fn
     {byte, :continue} ->
@@ -365,6 +366,10 @@ defmodule Antidote.Parser do
     {byte, :string} ->
       defp string(<<unquote(byte), rest::bits>>, original, skip, stack, len) do
         string(rest, original, skip, stack, len + 1)
+      end
+    {byte, :error} ->
+      defp string(<<unquote(byte), _rest::bits>>, original, skip, _stack, _len) do
+        error(original, skip)
       end
   end)
   defp string(<<char::utf8, rest::bits>>, original, skip, stack, len)
@@ -398,6 +403,10 @@ defmodule Antidote.Parser do
       defp string(<<unquote(byte), rest::bits>>, original, skip, stack, acc, len) do
         string(rest, original, skip, stack, acc, len + 1)
       end
+    {byte, :error} ->
+      defp string(<<unquote(byte), _rest::bits>>, original, skip, _stack, _acc, _len) do
+      error(original, skip)
+    end
   end)
   defp string(<<char::utf8, rest::bits>>, original, skip, stack, acc, len)
        when char <= 0x7FF do

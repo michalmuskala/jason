@@ -1,18 +1,12 @@
 defmodule Antidote do
-  @moduledoc """
-  Documentation for Antidote.
-  """
+  def decode(input) do
+    Antidote.Parser.parse(input)
+  end
 
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Antidote.hello
-      :world
-
-  """
-  def hello do
-    :world
+  def decode!(input) do
+    case Antidote.Parser.parse(input) do
+      {:ok, result} -> result
+      {:error, error} -> raise error
+    end
   end
 end
