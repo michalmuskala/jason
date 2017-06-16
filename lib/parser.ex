@@ -71,7 +71,7 @@ defmodule Antidote.Parser do
     string(rest, original, skip + 1, stack, 0)
   end
   defp value(<<?0, rest::bits>>, original, skip, stack) do
-    number_zero(rest, original, skip, stack)
+    number_zero(rest, original, skip, stack, 1)
   end
   defp value(<<_rest::bits>>, original, skip, _stack) do
     error(original, skip)
@@ -79,8 +79,11 @@ defmodule Antidote.Parser do
 
   digits = '0123456789'
 
+  defp number_minus(<<?0, rest::bits>>, original, skip, stack) do
+    number_zero(rest, original, skip, stack, 2)
+  end
   defp number_minus(<<byte, rest::bits>>, original, skip, stack)
-       when byte in unquote(digits) do
+       when byte in '123456789' do
     number(rest, original, skip, stack, 2)
   end
   defp number_minus(<<_rest::bits>>, original, skip, _stack) do
@@ -190,14 +193,14 @@ defmodule Antidote.Parser do
     continue(rest, original, final_skip, stack, float)
   end
 
-  defp number_zero(<<?., rest::bits>>, original, skip, stack) do
-    number_frac(rest, original, skip, stack, 2)
+  defp number_zero(<<?., rest::bits>>, original, skip, stack, len) do
+    number_frac(rest, original, skip, stack, len + 1)
   end
-  defp number_zero(<<e, rest::bits>>, original, skip, stack) when e in 'eE' do
-    number_exp_copy(rest, original, skip + 2, stack, "0")
+  defp number_zero(<<e, rest::bits>>, original, skip, stack, len) when e in 'eE' do
+    number_exp_copy(rest, original, skip + len + 1, stack, "0")
   end
-  defp number_zero(<<rest::bits>>, original, skip, stack) do
-    continue(rest, original, skip + 1, stack, 0)
+  defp number_zero(<<rest::bits>>, original, skip, stack, len) do
+    continue(rest, original, skip + len, stack, 0)
   end
 
   @compile {:inline, array: 4, empty_array: 4}
