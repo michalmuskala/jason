@@ -576,7 +576,7 @@ defmodule Antidote.Parser do
   defp escapeu(<<int1::16, int2::16, rest::bits>>, original, skip, stack,
        acc) do
     require Unescape
-    last = Unescape.escapeu_last(int2, original, skip)
+    last = escapeu_last(int2, original, skip)
     Unescape.escapeu_first(int1, last, rest, original, skip, stack, acc)
   end
   defp escapeu(<<_rest::bits>>, original, skip, _stack, _acc) do
@@ -586,11 +586,18 @@ defmodule Antidote.Parser do
   defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>, original,
        skip, stack, acc, hi) do
     require Unescape
-    last = Unescape.escapeu_last(int2, original, skip+6)
+    last = escapeu_last(int2, original, skip+6)
     Unescape.escapeu_surrogate(int1, last, rest, original, skip, stack, acc, hi)
   end
   defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
     error(original, skip + 6)
+  end
+
+  @compile {:inline, escapeu_last: 3}
+
+  defp escapeu_last(int, original, skip) do
+    require Unescape
+    Unescape.escapeu_last(int, original, skip)
   end
 
   defp try_parse_float(string, token, skip) do
