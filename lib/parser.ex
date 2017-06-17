@@ -426,16 +426,23 @@ defmodule Antidote.Parser do
     error(original, skip + len)
   end
 
-  escapes = Enum.zip('\b\t\n\f\r"\\/', 'btnfr"\\/')
+  escapes = Enum.zip('btnfr"\\/', '\b\t\n\f\r"\\/')
+  escape_jt = Codegen.jump_table([{?u, :escapeu} | escapes], :error)
 
-  for {byte, escape} <- escapes do
-    defp escape(<<unquote(escape), rest::bits>>, original, skip, stack, acc) do
-      string(rest, original, skip + 2, stack, [acc, unquote(byte)], 0)
-    end
-  end
-  defp escape(<<?u, rest::bits>>, original, skip, stack, acc) do
-    escapeu(rest, original, skip, stack, acc)
-  end
+  Enum.map(escape_jt, fn
+    {byte, :escapeu} ->
+      defp escape(<<unquote(byte), rest::bits>>, original, skip, stack, acc) do
+        escapeu(rest, original, skip, stack, acc)
+      end
+    {byte, :error} ->
+      defp escape(<<unquote(byte), _rest::bits>>, original, skip, _stack, _acc) do
+        error(original, skip + 1)
+      end
+    {byte, escape} ->
+      defp escape(<<unquote(byte), rest::bits>>, original, skip, stack, acc) do
+        string(rest, original, skip + 2, stack, [acc, unquote(escape)], 0)
+      end
+  end)
   defp escape(<<_rest::bits>>, original, skip, _stack, _acc) do
     error(original, skip + 1)
   end
