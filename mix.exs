@@ -38,14 +38,14 @@ defmodule Antidote.Mixfile do
 
   defp bench(["encode"]) do
     {_, res} = System.cmd("mix", ~w(run bench/encode.exs),
-      env: %{"MIX_ENV" => "bench"}, into: IO.binstream(:stdio, :line))
+      env: %{"MIX_ENV" => "bench"}, into: IO.stream(:stdio, :line))
     if res > 0 do
       System.at_exit(fn _ -> exit({:shutdown, res}) end)
     end
   end
   defp bench(["decode"]) do
     {_, res} = System.cmd("mix", ~w(run bench/decode.exs),
-      env: %{"MIX_ENV" => "bench"}, into: IO.binstream(:stdio, :line))
+      env: %{"MIX_ENV" => "bench"}, into: IO.stream(:stdio, :line))
     if res > 0 do
       System.at_exit(fn _ -> exit({:shutdown, res}) end)
     end
