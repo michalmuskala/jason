@@ -503,11 +503,57 @@ defmodule Antidote.Parser do
       clause
     end
 
-    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc) do
+    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc)
+         when first <= 0x00 do
       skip = quote do: (unquote(skip) + 6)
       acc =
         quote bind_quoted: [acc: acc, first: first, last: last] do
-          [acc | <<((first <<< 8) + last)::utf8>>]
+          if last <= 0x7F do
+            # 0?????
+            [acc, last]
+          else
+            # 110xxxx??  10?????
+            byte1 = ((0b110 <<< 5) + (first <<< 2)) + (last >>> 6)
+            byte2 = (0b10 <<< 6) + (last &&& 0b111111)
+            [acc, byte1, byte2]
+          end
+        end
+      args = [rest, original, skip, stack, acc, 0]
+      [clause] =
+        quote location: :keep do
+          unquote(int) -> string(unquote_splicing(args))
+        end
+      clause
+    end
+
+    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc)
+         when first <= 0x07 do
+      skip = quote do: (unquote(skip) + 6)
+      acc =
+        quote bind_quoted: [acc: acc, first: first, last: last] do
+          # 110xxx??  10??????
+          byte1 = ((0b110 <<< 5) + (first <<< 2)) + (last >>> 6)
+          byte2 = (0b10 <<< 6) + (last &&& 0b111111)
+          [acc, byte1, byte2]
+        end
+      args = [rest, original, skip, stack, acc, 0]
+      [clause] =
+        quote location: :keep do
+          unquote(int) -> string(unquote_splicing(args))
+        end
+      clause
+    end
+
+    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc)
+         when first <= 0xFF do
+      skip = quote do: (unquote(skip) + 6)
+      acc =
+        quote bind_quoted: [acc: acc, first: first, last: last] do
+          # 1110xxxx  10xxxx??  10??????
+          byte1 = (0b1110 <<< 4) + (first >>> 4)
+          byte2 = ((0b10 <<< 6) + ((first &&& 0b1111) <<< 2)) + (last >>> 6)
+          byte3 = (0b10 <<< 6) + (last &&& 0b111111)
+          [acc, byte1, byte2, byte3]
         end
       args = [rest, original, skip, stack, acc, 0]
       [clause] =
