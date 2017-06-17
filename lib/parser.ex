@@ -441,8 +441,9 @@ defmodule Antidote.Parser do
   end
 
   defp escapeu(<<escape::binary-4, rest::bits>>, original, skip, stack, acc) do
-    {hi, codepoint} = try_hex_codepoint(escape, skip)
+    hi = try_parse_hex(escape, skip)
     if not hi in 0xD800..0xDBFF do
+      codepoint = try_codepoint(hi, escape, skip)
       string(rest, original, skip + 6, stack, [acc, codepoint], 0)
     else
       escape_surrogate(rest, original, skip, stack, acc, hi)
@@ -452,7 +453,7 @@ defmodule Antidote.Parser do
     error(original, skip + 2)
   end
 
-  defp escape_surrogate(<<"\\u", escape::binary-4, rest::bits>>, original, skip, stack, acc, hi) do
+  defp escape_surrogate(<<?\\, ?u, escape::binary-4, rest::bits>>, original, skip, stack, acc, hi) do
     lo = try_parse_hex(escape, skip + 6)
     if lo in 0xDC00..0xDFFF do
       codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
@@ -468,14 +469,6 @@ defmodule Antidote.Parser do
 
   defp try_codepoint(codepoint, string, position) do
     <<codepoint::utf8>>
-  rescue
-    ArgumentError ->
-      token_error("\\u" <> string, position)
-  end
-
-  defp try_hex_codepoint(string, position) do
-    codepoint = String.to_integer(string, 16)
-    {codepoint, <<codepoint::utf8>>}
   rescue
     ArgumentError ->
       token_error("\\u" <> string, position)
