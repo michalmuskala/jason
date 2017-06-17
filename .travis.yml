@@ -1,0 +1,21 @@
+language: elixir
+
+cache:
+  apt: true
+  directories:
+    - ~/.mix
+    - deps
+
+elixir:
+  - 1.4
+
+otp_release:
+  - 19.3
+  - 20.0
+
+install:
+  - mix local.hex --force
+  - mix deps.get
+
+script:
+  - mix test
