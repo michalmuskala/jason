@@ -514,7 +514,7 @@ defmodule Antidote.Parser do
 
     defmacro escapeu_last(int, original, skip) do
       clauses = escapeu_last_clauses()
-      quote do
+      quote location: :keep do
         case unquote(int) do
           unquote(clauses ++ token_error_clause(original, skip, 6))
         end
@@ -523,7 +523,7 @@ defmodule Antidote.Parser do
 
     defmacro escapeu_first(int, last, rest, original, skip, stack, acc) do
       clauses = escapeu_first_clauses(last, rest, original, skip, stack, acc)
-      quote do
+      quote location: :keep do
         case unquote(int) do
           unquote(clauses ++ token_error_clause(original, skip, 6))
         end
@@ -559,7 +559,7 @@ defmodule Antidote.Parser do
     defmacro escapeu_surrogate(int, last, rest, original, skip, stack, acc,
              hi) do
       clauses = escapeu_surrogate_clauses(last, rest, original, skip, stack, acc, hi)
-      quote do
+      quote location: :keep do
         case unquote(int) do
           unquote(clauses ++ token_error_clause(original, skip, 12))
         end
