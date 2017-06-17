@@ -447,45 +447,131 @@ defmodule Antidote.Parser do
     error(original, skip + 1)
   end
 
-  defp escapeu(<<escape::binary-4, rest::bits>>, original, skip, stack, acc) do
-    hi = try_parse_hex(escape, skip)
-    if not hi in 0xD800..0xDBFF do
-      codepoint = try_codepoint(hi, escape, skip)
-      string(rest, original, skip + 6, stack, [acc, codepoint], 0)
-    else
-      escape_surrogate(rest, original, skip, stack, acc, hi)
+  defmodule Unescape do
+
+    use Bitwise
+
+    @digits Enum.concat([?0..?9, ?A..?F, ?a..?f])
+
+    def unicode_escapes(chars1 \\ @digits, chars2 \\ @digits) do
+      for char1 <- chars1, char2 <- chars2,
+          char3 <- @digits, char4 <- @digits do
+        value = (char1 <<< 24) + (char2 <<< 16) + (char3 <<< 8) + char4
+        codepoint = (integer8(char1, char2) <<< 8) + integer8(char3, char4)
+        {value, codepoint}
+      end
+    end
+
+    defp integer8(char1, char2) do
+      (integer4(char1) <<< 4) + integer4(char2)
+    end
+
+    defp integer4(char) when char in ?0..?9, do: char - ?0
+    defp integer4(char) when char in ?A..?F, do: char - ?A + 10
+    defp integer4(char) when char in ?a..?f, do: char - ?a + 10
+
+    defp escapeu_clauses(rest, original, skip, stack, acc) do
+      for {int, codepoint} <- unicode_escapes(),
+          not (codepoint in 0xDC00..0xDFFF) do
+        escapeu_clause(int, rest, original, skip, stack, acc, codepoint)
+      end
+    end
+
+    defp escapeu_clause(int, rest, original, skip, stack, acc, codepoint)
+         when codepoint in 0xD800..0xDBFF do
+      min_char = <<(0x10000 + ((codepoint &&& 0x03FF) <<< 10))::utf8>>
+      <<hi::20, 0::4, 0b10::2, 0::6>> = min_char
+      args = [rest, original, skip, stack, acc, hi]
+      [clause] =
+        quote location: :keep do
+          unquote(int) -> escape_surrogate(unquote_splicing(args))
+        end
+      clause
+    end
+
+    defp escapeu_clause(int, rest, original, skip, stack, acc, codepoint) do
+      skip = quote do: (unquote(skip) + 6)
+      acc = quote do: [unquote(acc) | unquote(char(codepoint))]
+      args = [rest, original, skip, stack, acc, 0]
+      [clause] =
+        quote location: :keep do
+          unquote(int) -> string(unquote_splicing(args))
+        end
+      clause
+    end
+
+    defp char(codepoint) do
+      case <<codepoint::utf8>> do
+        <<byte::8>> ->
+          [byte]
+        <<byte1::8, byte2::8>> ->
+          [byte1, byte2]
+        char ->
+          char
+      end
+    end
+
+    defp token_error_clause(original, skip, len) do
+      quote do
+        _ ->
+          token_error(unquote_splicing([original, skip, len]))
+      end
+    end
+
+    defmacro escapeu_case(int, rest, original, skip, stack, acc) do
+      clauses = escapeu_clauses(rest, original, skip, stack, acc)
+      quote do
+        case unquote(int) do
+          unquote(clauses ++ token_error_clause(original, skip, 6))
+        end
+      end
+    end
+
+    defp escapeu_surrogate_clauses(rest, original, skip, stack, acc, hi) do
+      digits1 = 'Dd'
+      digits2 = Stream.concat([?C..?F, ?c..?f])
+      for {int, lo} <- unicode_escapes(digits1, digits2) do
+        escapeu_surrogate_clause(int, rest, original, skip, stack, acc, hi, lo)
+      end
+    end
+
+    defp escapeu_surrogate_clause(int, rest, original, skip, stack, acc,
+         hi, lo) do
+      skip = quote do: unquote(skip) + 12
+      args = [rest, original, skip, stack]
+      # Get the 10 least significant bits from lo and split into 4 and 6 bits
+      lo1 = (lo &&& 0x03C0) >>> 6
+      lo2 = lo &&& 0x003F
+      [clause] =
+        quote do
+          unquote(int) ->
+            codepoint =
+              <<unquote(hi)::20, unquote(lo1)::4, 0b10::2, unquote(lo2)::6>>
+            string(unquote_splicing(args), [unquote(acc) | codepoint], 0)
+        end
+      clause
+    end
+
+    defmacro escapeu_surrogate_case(int, rest, original, skip, stack, acc,
+             hi) do
+      clauses = escapeu_surrogate_clauses(rest, original, skip, stack, acc, hi)
+      quote do
+        case unquote(int) do
+          unquote(clauses ++ token_error_clause(original, skip, 12))
+        end
+      end
     end
   end
-  defp escapeu(<<_rest::bits>>, original, skip, _stack, _acc) do
-    error(original, skip + 2)
+
+  defp escapeu(<<int::32, rest::bits>>, original, skip, stack, acc) do
+    require Unescape
+    Unescape.escapeu_case(int, rest, original, skip, stack, acc)
   end
 
-  defp escape_surrogate(<<?\\, ?u, escape::binary-4, rest::bits>>, original, skip, stack, acc, hi) do
-    lo = try_parse_hex(escape, skip + 6)
-    if lo in 0xDC00..0xDFFF do
-      codepoint = 0x10000 + ((hi &&& 0x03FF) <<< 10) + (lo &&& 0x03FF)
-      string(rest, original, skip + 12, stack, [acc, <<codepoint::utf8>>], 0)
-    else
-      token = binary_part(original, skip, 12)
-      token_error(token, skip)
-    end
-  end
-  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
-    error(original, skip + 6)
-  end
-
-  defp try_codepoint(codepoint, string, position) do
-    <<codepoint::utf8>>
-  rescue
-    ArgumentError ->
-      token_error("\\u" <> string, position)
-  end
-
-  defp try_parse_hex(string, position) do
-    String.to_integer(string, 16)
-  rescue
-    ArgumentError ->
-      token_error("\\u" <> string, position)
+  defp escape_surrogate(<<?\\, ?u, int::32, rest::bits>>, original, skip, stack,
+       acc, hi) do
+    require Unescape
+    Unescape.escapeu_surrogate_case(int, rest, original, skip, stack, acc, hi)
   end
 
   defp try_parse_float(string, token, skip) do
@@ -505,6 +591,10 @@ defmodule Antidote.Parser do
 
   defp token_error(token, position) do
     throw {:token, token, position}
+  end
+
+  defp token_error(token, position, len) do
+    token_error(binary_part(token, position, len), position)
   end
 
   defp continue(<<rest::bits>>, original, skip, [next | stack], value) do
