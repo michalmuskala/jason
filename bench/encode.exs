@@ -1,12 +1,12 @@
 encode_jobs = %{
-  "Antidote" => &Antidote.Encode.encode(&1, %{escape: :json, validate: false, maps: :naive}),
-  "Antidote strict" => &Antidote.Encode.encode(&1, %{escape: :json, validate: true, maps: :strict}),
-  "Poison" => &Poison.encode_to_iodata!/1,
-  # "JSX"    => &JSX.encode!/1,
-  # "Tiny"   => &Tiny.encode!/1,
-  # "jsone"  => &:jsone.encode/1,
-  "jiffy"  => &:jiffy.encode/1,
-  # "JSON"   => &JSON.encode!/1,
+  "Antidote"        => &Antidote.encode_to_iodata!/1,
+  "Antidote strict" => &Antidote.encode_to_iodata!(&1, maps: :strict),
+  "Poison"          => &Poison.encode_to_iodata!/1,
+  "JSX"             => &JSX.encode!/1,
+  "Tiny"            => &Tiny.encode!/1,
+  "jsone"           => &:jsone.encode/1,
+  "jiffy"           => &:jiffy.encode/1,
+  "JSON"            => &JSON.encode!/1,
 }
 
 encode_inputs = [
