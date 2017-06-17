@@ -441,8 +441,7 @@ defmodule Antidote.Parser do
   end
 
   defmodule Unescape do
-
-    use Bitwise
+    import Bitwise
 
     @digits Enum.concat([?0..?9, ?A..?F, ?a..?f])
 
