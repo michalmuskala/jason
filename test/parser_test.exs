@@ -41,7 +41,7 @@ defmodule Antidote.ParserTest do
     assert_fail_with ~s("Here's a snowman for you: ☃. Good day!), "unexpected end of input at position 41"
     assert_fail_with ~s("𝄞), "unexpected end of input at position 5"
     assert_fail_with ~s(\u001F), "unexpected byte at position 0: 0x1F"
-    assert_fail_with ~s("\\ud8aa\\udcxx"), "unexpected sequence at position 1: \"\\\\ud8aa\\\\udcxx\""
+    assert_fail_with ~s("\\ud8aa\\udcxx"), "unexpected sequence at position 7: \"\\\\udcxx\""
     assert_fail_with ~s("\\ud8aa\\uda00"), "unexpected sequence at position 1: \"\\\\ud8aa\\\\uda00\""
     assert_fail_with ~s("\\uxxxx"), "unexpected sequence at position 1: \"\\\\uxxxx\""
 

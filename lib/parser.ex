@@ -454,11 +454,8 @@ defmodule Antidote.Parser do
     @digits Enum.concat([?0..?9, ?A..?F, ?a..?f])
 
     def unicode_escapes(chars1 \\ @digits, chars2 \\ @digits) do
-      for char1 <- chars1, char2 <- chars2,
-          char3 <- @digits, char4 <- @digits do
-        value = (char1 <<< 24) + (char2 <<< 16) + (char3 <<< 8) + char4
-        codepoint = (integer8(char1, char2) <<< 8) + integer8(char3, char4)
-        {value, codepoint}
+      for char1 <- chars1, char2 <- chars2 do
+        {(char1 <<< 8) + char2, integer8(char1, char2)}
       end
     end
 
@@ -470,17 +467,29 @@ defmodule Antidote.Parser do
     defp integer4(char) when char in ?A..?F, do: char - ?A + 10
     defp integer4(char) when char in ?a..?f, do: char - ?a + 10
 
-    defp escapeu_clauses(rest, original, skip, stack, acc) do
-      for {int, codepoint} <- unicode_escapes(),
-          not (codepoint in 0xDC00..0xDFFF) do
-        escapeu_clause(int, rest, original, skip, stack, acc, codepoint)
+    defp escapeu_last_clauses() do
+      for {int, last} <- unicode_escapes() do
+        [clause] =
+          quote do
+            unquote(int) -> unquote(last)
+          end
+        clause
       end
     end
 
-    defp escapeu_clause(int, rest, original, skip, stack, acc, codepoint)
-         when codepoint in 0xD800..0xDBFF do
-      min_char = <<(0x10000 + ((codepoint &&& 0x03FF) <<< 10))::utf8>>
-      <<hi::20, 0::4, 0b10::2, 0::6>> = min_char
+    defp escapeu_first_clauses(last, rest, original, skip, stack, acc) do
+      for {int, first} <- unicode_escapes(),
+          not (first in 0xDC..0xDF) do
+        escapeu_first_clause(int, first, last, rest, original, skip, stack, acc)
+      end
+    end
+
+    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc)
+         when first in 0xD8..0xDB do
+      hi =
+        quote bind_quoted: [first: first, last: last] do
+          0x10000 + ((((first &&& 0x03) <<< 8) + last) <<< 10)
+        end
       args = [rest, original, skip, stack, acc, hi]
       [clause] =
         quote location: :keep do
@@ -489,26 +498,18 @@ defmodule Antidote.Parser do
       clause
     end
 
-    defp escapeu_clause(int, rest, original, skip, stack, acc, codepoint) do
+    defp escapeu_first_clause(int, first, last, rest, original, skip, stack, acc) do
       skip = quote do: (unquote(skip) + 6)
-      acc = quote do: [unquote(acc) | unquote(char(codepoint))]
+      acc =
+        quote bind_quoted: [acc: acc, first: first, last: last] do
+          [acc | <<((first <<< 8) + last)::utf8>>]
+        end
       args = [rest, original, skip, stack, acc, 0]
       [clause] =
         quote location: :keep do
           unquote(int) -> string(unquote_splicing(args))
         end
       clause
-    end
-
-    defp char(codepoint) do
-      case <<codepoint::utf8>> do
-        <<byte::8>> ->
-          [byte]
-        <<byte1::8, byte2::8>> ->
-          [byte1, byte2]
-        char ->
-          char
-      end
     end
 
     defp token_error_clause(original, skip, len) do
@@ -518,8 +519,8 @@ defmodule Antidote.Parser do
       end
     end
 
-    defmacro escapeu_case(int, rest, original, skip, stack, acc) do
-      clauses = escapeu_clauses(rest, original, skip, stack, acc)
+    defmacro escapeu_last(int, original, skip) do
+      clauses = escapeu_last_clauses()
       quote do
         case unquote(int) do
           unquote(clauses ++ token_error_clause(original, skip, 6))
@@ -527,34 +528,44 @@ defmodule Antidote.Parser do
       end
     end
 
-    defp escapeu_surrogate_clauses(rest, original, skip, stack, acc, hi) do
-      digits1 = 'Dd'
-      digits2 = Stream.concat([?C..?F, ?c..?f])
-      for {int, lo} <- unicode_escapes(digits1, digits2) do
-        escapeu_surrogate_clause(int, rest, original, skip, stack, acc, hi, lo)
+    defmacro escapeu_first(int, last, rest, original, skip, stack, acc) do
+      clauses = escapeu_first_clauses(last, rest, original, skip, stack, acc)
+      quote do
+        case unquote(int) do
+          unquote(clauses ++ token_error_clause(original, skip, 6))
+        end
       end
     end
 
-    defp escapeu_surrogate_clause(int, rest, original, skip, stack, acc,
-         hi, lo) do
+    defp escapeu_surrogate_clauses(last, rest, original, skip, stack, acc, hi) do
+      digits1 = 'Dd'
+      digits2 = Stream.concat([?C..?F, ?c..?f])
+      for {int, first} <- unicode_escapes(digits1, digits2) do
+        escapeu_surrogate_clause(int, first, last, rest, original, skip, stack,
+          acc, hi)
+      end
+    end
+
+    defp escapeu_surrogate_clause(int, first, last, rest, original, skip, stack,
+         acc, hi) do
       skip = quote do: unquote(skip) + 12
-      args = [rest, original, skip, stack]
-      # Get the 10 least significant bits from lo and split into 4 and 6 bits
-      lo1 = (lo &&& 0x03C0) >>> 6
-      lo2 = lo &&& 0x003F
+      acc =
+        quote bind_quoted: [acc: acc, first: first, last: last, hi: hi] do
+          lo = ((first &&& 0x03) <<< 8) + last
+          [acc | <<(hi + lo)::utf8>>]
+        end
+      args = [rest, original, skip, stack, acc, 0]
       [clause] =
         quote do
           unquote(int) ->
-            codepoint =
-              <<unquote(hi)::20, unquote(lo1)::4, 0b10::2, unquote(lo2)::6>>
-            string(unquote_splicing(args), [unquote(acc) | codepoint], 0)
+            string(unquote_splicing(args))
         end
       clause
     end
 
-    defmacro escapeu_surrogate_case(int, rest, original, skip, stack, acc,
+    defmacro escapeu_surrogate(int, last, rest, original, skip, stack, acc,
              hi) do
-      clauses = escapeu_surrogate_clauses(rest, original, skip, stack, acc, hi)
+      clauses = escapeu_surrogate_clauses(last, rest, original, skip, stack, acc, hi)
       quote do
         case unquote(int) do
           unquote(clauses ++ token_error_clause(original, skip, 12))
@@ -563,18 +574,21 @@ defmodule Antidote.Parser do
     end
   end
 
-  defp escapeu(<<int::32, rest::bits>>, original, skip, stack, acc) do
+  defp escapeu(<<int1::16, int2::16, rest::bits>>, original, skip, stack,
+       acc) do
     require Unescape
-    Unescape.escapeu_case(int, rest, original, skip, stack, acc)
+    last = Unescape.escapeu_last(int2, original, skip)
+    Unescape.escapeu_first(int1, last, rest, original, skip, stack, acc)
   end
   defp escapeu(<<_rest::bits>>, original, skip, _stack, _acc) do
     error(original, skip)
   end
 
-  defp escape_surrogate(<<?\\, ?u, int::32, rest::bits>>, original, skip, stack,
-       acc, hi) do
+  defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>, original,
+       skip, stack, acc, hi) do
     require Unescape
-    Unescape.escapeu_surrogate_case(int, rest, original, skip, stack, acc, hi)
+    last = Unescape.escapeu_last(int2, original, skip+6)
+    Unescape.escapeu_surrogate(int1, last, rest, original, skip, stack, acc, hi)
   end
   defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
     error(original, skip + 6)
