@@ -567,11 +567,17 @@ defmodule Antidote.Parser do
     require Unescape
     Unescape.escapeu_case(int, rest, original, skip, stack, acc)
   end
+  defp escapeu(<<_rest::bits>>, original, skip, _stack, _acc) do
+    error(original, skip)
+  end
 
   defp escape_surrogate(<<?\\, ?u, int::32, rest::bits>>, original, skip, stack,
        acc, hi) do
     require Unescape
     Unescape.escapeu_surrogate_case(int, rest, original, skip, stack, acc, hi)
+  end
+  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
+    error(original, skip + 6)
   end
 
   defp try_parse_float(string, token, skip) do
