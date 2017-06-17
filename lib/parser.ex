@@ -459,13 +459,19 @@ defmodule Antidote.Parser do
     defp integer4(char) when char in ?A..?F, do: char - ?A + 10
     defp integer4(char) when char in ?a..?f, do: char - ?a + 10
 
-    defp escapeu_last_clauses() do
-      for {int, last} <- unicode_escapes() do
-        [clause] =
-          quote do
-            unquote(int) -> unquote(last)
-          end
-        clause
+    defp token_error_clause(original, skip, len) do
+      quote do
+        _ ->
+          token_error(unquote_splicing([original, skip, len]))
+      end
+    end
+
+    defmacro escapeu_first(int, last, rest, original, skip, stack, acc) do
+      clauses = escapeu_first_clauses(last, rest, original, skip, stack, acc)
+      quote location: :keep do
+        case unquote(int) do
+          unquote(clauses ++ token_error_clause(original, skip, 6))
+        end
       end
     end
 
@@ -504,13 +510,6 @@ defmodule Antidote.Parser do
       clause
     end
 
-    defp token_error_clause(original, skip, len) do
-      quote do
-        _ ->
-          token_error(unquote_splicing([original, skip, len]))
-      end
-    end
-
     defmacro escapeu_last(int, original, skip) do
       clauses = escapeu_last_clauses()
       quote location: :keep do
@@ -520,11 +519,22 @@ defmodule Antidote.Parser do
       end
     end
 
-    defmacro escapeu_first(int, last, rest, original, skip, stack, acc) do
-      clauses = escapeu_first_clauses(last, rest, original, skip, stack, acc)
+    defp escapeu_last_clauses() do
+      for {int, last} <- unicode_escapes() do
+        [clause] =
+          quote do
+            unquote(int) -> unquote(last)
+          end
+        clause
+      end
+    end
+
+    defmacro escapeu_surrogate(int, last, rest, original, skip, stack, acc,
+             hi) do
+      clauses = escapeu_surrogate_clauses(last, rest, original, skip, stack, acc, hi)
       quote location: :keep do
         case unquote(int) do
-          unquote(clauses ++ token_error_clause(original, skip, 6))
+          unquote(clauses ++ token_error_clause(original, skip, 12))
         end
       end
     end
@@ -554,16 +564,6 @@ defmodule Antidote.Parser do
         end
       clause
     end
-
-    defmacro escapeu_surrogate(int, last, rest, original, skip, stack, acc,
-             hi) do
-      clauses = escapeu_surrogate_clauses(last, rest, original, skip, stack, acc, hi)
-      quote location: :keep do
-        case unquote(int) do
-          unquote(clauses ++ token_error_clause(original, skip, 12))
-        end
-      end
-    end
   end
 
   defp escapeu(<<int1::16, int2::16, rest::bits>>, original, skip, stack,
@@ -576,21 +576,21 @@ defmodule Antidote.Parser do
     error(original, skip)
   end
 
-  defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>, original,
-       skip, stack, acc, hi) do
-    require Unescape
-    last = escapeu_last(int2, original, skip+6)
-    Unescape.escapeu_surrogate(int1, last, rest, original, skip, stack, acc, hi)
-  end
-  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
-    error(original, skip + 6)
-  end
-
   @compile {:inline, escapeu_last: 3}
 
   defp escapeu_last(int, original, skip) do
     require Unescape
     Unescape.escapeu_last(int, original, skip)
+  end
+
+  defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>, original,
+       skip, stack, acc, hi) do
+    require Unescape
+    last = escapeu_last(int2, original, skip + 6)
+    Unescape.escapeu_surrogate(int1, last, rest, original, skip, stack, acc, hi)
+  end
+  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _acc, _hi) do
+    error(original, skip + 6)
   end
 
   defp try_parse_float(string, token, skip) do
