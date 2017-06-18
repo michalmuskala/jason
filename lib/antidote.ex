@@ -1,8 +1,16 @@
 defmodule Antidote do
+  @type escape :: :json | :unicode | :html | :javascript
+  @type validate :: boolean
+  @type maps :: :naive | :strict
+
+  @type encode_opt :: {:escape, escape} | {:validate, validate} | {:maps, maps}
+
+  @spec decode(String.t) :: {:ok, term} | {:error, Antidote.ParseError.t}
   def decode(input) do
     Antidote.Parser.parse(input)
   end
 
+  @spec decode!(String.t) :: term | no_return
   def decode!(input) do
     case Antidote.Parser.parse(input) do
       {:ok, result} -> result
@@ -10,6 +18,7 @@ defmodule Antidote do
     end
   end
 
+  @spec encode(term, [encode_opt]) :: {:ok, String.t} | {:error, Antidote.EncodeError.t}
   def encode(input, opts \\ []) do
     case Antidote.Encode.encode(input, format_opts(opts)) do
       {:ok, result} -> {:ok, IO.iodata_to_binary(result)}
@@ -17,6 +26,7 @@ defmodule Antidote do
     end
   end
 
+  @spec encode!(term, [encode_opt]) :: String.t | no_return
   def encode!(input, opts \\ []) do
     case Antidote.Encode.encode(input, format_opts(opts)) do
       {:ok, result} -> IO.iodata_to_binary(result)
@@ -24,10 +34,12 @@ defmodule Antidote do
     end
   end
 
+  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, Antidote.EncodeError.t}
   def encode_to_iodata(input, opts \\ []) do
     Antidote.Encode.encode(input, format_opts(opts))
   end
 
+  @spec encode_to_iodata!(term, [encode_opt]) :: iodata | no_return
   def encode_to_iodata!(input, opts \\ []) do
     case Antidote.Encode.encode(input, format_opts(opts)) do
       {:ok, result} -> result

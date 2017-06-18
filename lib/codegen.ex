@@ -1,4 +1,6 @@
 defmodule Antidote.Codegen do
+  @moduledoc false
+
   def jump_table(ranges, default) do
     ranges
     |> ranges_to_orddict()

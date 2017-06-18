@@ -23,6 +23,8 @@ defmodule Antidote.ParseError do
 end
 
 defmodule Antidote.Parser do
+  @moduledoc false
+
   import Bitwise
 
   alias Antidote.{ParseError, Codegen}
