@@ -1,16 +1,19 @@
 language: elixir
 
 cache:
-  apt: true
   directories:
+    - ~/.hex
     - ~/.mix
     - deps
 
 elixir:
   - 1.4
+  - 1.5.0-rc.1
 
 otp_release:
+  - 18.3
   - 19.3
+  - 20.0
 
 install:
   - mix local.hex --force
