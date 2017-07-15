@@ -22,9 +22,7 @@ defmodule Antidote.Encode do
     try do
       {:ok, encode_dispatch(value, escape, encode_map, opts)}
     catch
-      {:duplicate_key, _} = err ->
-        {:error, EncodeError.exception(err)}
-      {:invalid_byte, _, _} = err ->
+      {:antidote_encode_error, err} ->
         {:error, EncodeError.exception(err)}
     end
   end
@@ -175,7 +173,7 @@ defmodule Antidote.Encode do
     key = IO.iodata_to_binary(encode_key(key, escape))
     case visited do
       %{^key => _} ->
-        throw {:duplicate_key, key}
+        encode_error({:duplicate_key, key})
       _ ->
         visited = Map.put(visited, key, [])
         [",\"", key, "\":",
@@ -202,16 +200,16 @@ defmodule Antidote.Encode do
     Antidote.Encoder.encode(value, opts)
   end
 
-  #TODO: Should we allow more things as keys?
-  defp encode_key(atom, escape) when is_atom(atom) do
+  def encode_key(atom, escape) when is_atom(atom) do
     string = Atom.to_string(atom)
     escape.(string, string, 0, :noclose)
   end
-  defp encode_key(string, escape) when is_binary(string) do
+  def encode_key(string, escape) when is_binary(string) do
     escape.(string, string, 0, :noclose)
   end
-  defp encode_key(integer, _escape) when is_integer(integer) do
-    Integer.to_string(integer)
+  def encode_key(other, escape) do
+    string = String.Chars.to_string(other)
+    escape.(string, string, 0, :noclose)
   end
 
   def encode_string(string, opts) do
@@ -332,7 +330,7 @@ defmodule Antidote.Encode do
     acc
   end
   defp escape_json_strict(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
-    throw {:invalid_byte, byte, original}
+    encode_error({:invalid_byte, byte, original})
   end
 
   Enum.map(json_strict_jt, fn
@@ -368,7 +366,11 @@ defmodule Antidote.Encode do
     [acc | binary_part(original, skip, len)]
   end
   defp escape_json_strict_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
-    throw {:invalid_byte, byte, original}
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  defp encode_error(error) do
+    throw {:antidote_encode_error, error}
   end
 end
 
