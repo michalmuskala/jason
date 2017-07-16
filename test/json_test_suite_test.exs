@@ -71,9 +71,6 @@ defmodule JsonTestSuite do
   end
 
   defp parse!(json) do
-    case Antidote.Parser.parse(json) do
-      {:ok, value} -> value
-      {:error, error} -> raise error
-    end
+    Antidote.decode!(json)
   end
 end

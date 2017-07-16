@@ -70,6 +70,20 @@ defmodule Antidote.ParserTest do
     assert parse!(~s({"foo": {"bar": "baz"}})) == expected
   end
 
+  test "objects with atom keys" do
+    assert parse!("{}", keys: :atoms) == %{}
+    assert parse!("{}", keys: :atoms!) == %{}
+    assert parse!(~s({"foo": "bar"}), keys: :atoms) == %{foo: "bar"}
+    assert parse!(~s({"foo": "bar"}), keys: :atoms!) == %{foo: "bar"}
+
+    key = Integer.to_string(System.unique_integer)
+    assert_raise ArgumentError, fn ->
+      parse!(~s({"#{key}": "value"}), keys: :atoms!)
+    end
+    key = String.to_atom(key)
+    assert parse!(~s({"#{key}": "value"}), keys: :atoms) == %{key => "value"}
+  end
+
   test "arrays" do
     assert_fail_with "[", "unexpected end of input at position 1"
     assert_fail_with "[,", "unexpected byte at position 1: 0x2C (',')"
@@ -94,11 +108,8 @@ defmodule Antidote.ParserTest do
     assert parse!(~s(  {  "foo"  :  "bar"  ,  "baz"  :  "quux"  }  )) == expected
   end
 
-  defp parse!(json) do
-    case Antidote.Parser.parse(json) do
-      {:ok, value} -> value
-      {:error, error} -> raise error
-    end
+  defp parse!(json, opts \\ []) do
+    Antidote.decode!(json, opts)
   end
 
   defp assert_fail_with(string, error) do
