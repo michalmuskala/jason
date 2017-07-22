@@ -59,7 +59,7 @@ defmodule Antidote.Parser do
 
   ranges = [{?0..?9, :skip}, {?-, :skip}, {?\", :skip}, {'\s\n\t\r', :value},
             {hd('{'), :object}, {hd('['), :array}, {hd(']'), :empty_array},
-            {?n, :null}, {?t, :value_true}, {?f, :value_false}]
+            {?n, :skip}, {?t, :skip}, {?f, :skip}]
 
   for {byte, action} <- Codegen.jump_table(ranges, :error), action != :skip do
     defp value(<<unquote(byte), rest::bits>>, original, skip, stack, key_decode) do
@@ -79,6 +79,15 @@ defmodule Antidote.Parser do
   end
   defp value(<<?0, rest::bits>>, original, skip, stack, key_decode) do
     number_zero(rest, original, skip, stack, key_decode, 1)
+  end
+  defp value(<<"true", rest::bits>>, original, skip, stack, key_decode) do
+    continue(rest, original, skip + 4, stack, key_decode, true)
+  end
+  defp value(<<"false", rest::bits>>, original, skip, stack, key_decode) do
+    continue(rest, original, skip + 5, stack, key_decode, false)
+  end
+  defp value(<<"null", rest::bits>>, original, skip, stack, key_decode) do
+    continue(rest, original, skip + 4, stack, key_decode, nil)
   end
   defp value(<<_rest::bits>>, original, skip, _stack, _key_decode) do
     error(original, skip)
@@ -210,13 +219,13 @@ defmodule Antidote.Parser do
     continue(rest, original, skip + len, stack, key_decode, 0)
   end
 
-  @compile {:inline, array: 5, empty_array: 5}
+  @compile {:inline, array: 5}
 
   defp array(rest, original, skip, stack, key_decode) do
     value(rest, original, skip, [@array, [] | stack], key_decode)
   end
 
-  defp empty_array(rest, original, skip, stack, key_decode) do
+  defp empty_array(<<rest::bits>>, original, skip, stack, key_decode) do
     case stack do
       [@array, [] | stack] ->
         continue(rest, original, skip, stack, key_decode, [])
@@ -335,27 +344,6 @@ defmodule Antidote.Parser do
       end
   end)
   defp key(<<_rest::bits>>, original, skip, _stack, _key_decode, _value) do
-    error(original, skip)
-  end
-
-  defp null(<<"ull", rest::bits>>, original, skip, stack, key_decode) do
-    continue(rest, original, skip + 3, stack, key_decode, nil)
-  end
-  defp null(<<_rest::bits>>, original, skip, _stack, _key_decode) do
-    error(original, skip)
-  end
-
-  defp value_true(<<"rue", rest::bits>>, original, skip, stack, key_decode) do
-    continue(rest, original, skip + 3, stack, key_decode, true)
-  end
-  defp value_true(<<_rest::bits>>, original, skip, _stack, _key_decode) do
-    error(original, skip)
-  end
-
-  defp value_false(<<"alse", rest::bits>>, original, skip, stack, key_decode) do
-    continue(rest, original, skip + 4, stack, key_decode, false)
-  end
-  defp value_false(<<_rest::bits>>, original, skip, _stack, _key_decode) do
     error(original, skip)
   end
 
@@ -674,12 +662,16 @@ defmodule Antidote.Parser do
   end
 
   @compile {:inline, continue: 6}
-  defp continue(rest, original, skip, [next | stack], key_decode, value) do
-    case next do
-      @terminate -> terminate(rest, original, skip, stack, key_decode, value)
-      @array     -> array(rest, original, skip, stack, key_decode, value)
-      @key       -> key(rest, original, skip, stack, key_decode, value)
-      @object    -> object(rest, original, skip, stack, key_decode, value)
+  defp continue(rest, original, skip, stack, key_decode, value) do
+    case stack do
+      [@terminate | stack] ->
+        terminate(rest, original, skip, stack, key_decode, value)
+      [@array | stack] ->
+        array(rest, original, skip, stack, key_decode, value)
+      [@key | stack] ->
+        key(rest, original, skip, stack, key_decode, value)
+      [@object | stack] ->
+        object(rest, original, skip, stack, key_decode, value)
     end
   end
 
