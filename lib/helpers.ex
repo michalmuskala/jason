@@ -53,7 +53,7 @@ defmodule Antidote.Helpers do
 
   defp encode_pair({key, value}, encode_args) do
     key = IO.iodata_to_binary(Antidote.Encode.encode_key(key, &escape_key/4))
-    ["\"", key, "\":", quote do
+    ["\"" <> key <> "\":", quote do
       Antidote.Helpers.__encode__(unquote_splicing([value | encode_args]))
     end]
   end
@@ -66,7 +66,7 @@ defmodule Antidote.Helpers do
   defp check_safe_key!(binary) do
     for << <<byte>> <- binary >> do
       if byte > 0x7F or byte < 0x1F or byte in '"\\/' do
-        raise "unexpected byte in literal key: #{inspect byte, base: :hex}"
+        raise Antidote.EncodeError, "invalid byte #{inspect byte, base: :hex} in literal key: #{inspect binary}"
       end
     end
     :ok

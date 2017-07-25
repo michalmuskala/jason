@@ -1,6 +1,9 @@
 defmodule Antidote.EncodeError do
   defexception [:message]
 
+  def exception(message) when is_binary(message) do
+    %__MODULE__{message: message}
+  end
   def exception({:duplicate_key, key}) do
     %__MODULE__{message: "duplicate key: #{key}"}
   end
