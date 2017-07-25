@@ -3,6 +3,8 @@ defmodule Antidote.HelpersTest do
 
   import Antidote.Helpers
 
+  doctest Antidote.Helpers
+
   describe "json_map/2" do
     test "produces same output as regular encoding" do
       assert %Antidote.Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
