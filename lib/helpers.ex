@@ -58,7 +58,7 @@ defmodule Antidote.Helpers do
     end]
   end
 
-  defp escape_key(binary, _original, _skip, :noclose) do
+  defp escape_key(binary, _original, _skip, [] = _tail) do
     check_safe_key!(binary)
     binary
   end

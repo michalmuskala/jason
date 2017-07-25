@@ -649,6 +649,7 @@ defmodule Antidote.Parser do
     error(original, skip - 1)
   end
 
+  @compile {:inline, error: 2, token_error: 2, token_error: 3}
   defp error(_original, skip) do
     throw {:position, skip}
   end
