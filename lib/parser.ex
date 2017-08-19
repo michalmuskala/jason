@@ -56,6 +56,7 @@ defmodule Antidote.Parser do
   defp key_decode_function(%{keys: :atoms}), do: &String.to_atom/1
   defp key_decode_function(%{keys: :atoms!}), do: &String.to_existing_atom/1
   defp key_decode_function(%{keys: :strings}), do: &(&1)
+  defp key_decode_function(%{keys: fun}) when is_function(fun, 1), do: fun
 
   ranges = [{?0..?9, :skip}, {?-, :skip}, {?\", :skip}, {'\s\n\t\r', :value},
             {hd('{'), :object}, {hd('['), :array}, {hd(']'), :empty_array},
@@ -245,7 +246,7 @@ defmodule Antidote.Parser do
     {byte, :continue} ->
       defp array(<<unquote(byte), rest::bits>>, original, skip, stack, key_decode, value) do
         [acc | stack] = stack
-        continue(rest, original, skip + 1, stack, key_decode, :lists.reverse([value | acc]))
+        continue(rest, original, skip + 1, stack, key_decode, :lists.reverse(acc, [value]))
       end
     {byte, :value} ->
       defp array(<<unquote(byte), rest::bits>>, original, skip, stack, key_decode, value) do
@@ -258,7 +259,7 @@ defmodule Antidote.Parser do
       end
   end)
   defp array(<<_rest::bits>>, original, skip, _stack, _key_decode, _value) do
-    error(original, skip)
+    empty_error(original, skip)
   end
 
   @compile {:inline, object: 5}
@@ -277,15 +278,17 @@ defmodule Antidote.Parser do
       end
     {byte, :continue} ->
       defp object(<<unquote(byte), rest::bits>>, original, skip, stack, key_decode, value) do
+        skip = skip + 1
         [key, acc | stack] = stack
         final = [{key_decode.(key), value} | acc]
-        continue(rest, original, skip + 1, stack, key_decode, :maps.from_list(final))
+        continue(rest, original, skip, stack, key_decode, :maps.from_list(final))
       end
     {byte, :key} ->
       defp object(<<unquote(byte), rest::bits>>, original, skip, stack, key_decode, value) do
+        skip = skip + 1
         [key, acc | stack] = stack
         acc = [{key_decode.(key), value} | acc]
-        key(rest, original, skip + 1, [acc | stack], key_decode)
+        key(rest, original, skip, [acc | stack], key_decode)
       end
     {byte, :error} ->
       defp object(<<unquote(byte), _rest::bits>>, original, skip, _stack, _key_decode, _value) do
@@ -293,7 +296,7 @@ defmodule Antidote.Parser do
       end
   end)
   defp object(<<_rest::bits>>, original, skip, _stack, _key_decode, _value) do
-    error(original, skip)
+    empty_error(original, skip)
   end
 
   ranges = [{'\s\n\t\r', :key}, {hd('}'), :continue}, {?\", :string}]
@@ -323,7 +326,7 @@ defmodule Antidote.Parser do
       end
   end)
   defp key(<<_rest::bits>>, original, skip, _stack, _key_decode) do
-    error(original, skip)
+    empty_error(original, skip)
   end
 
   ranges = [{'\s\n\t\r', :key}, {?:, :value}]
@@ -344,7 +347,7 @@ defmodule Antidote.Parser do
       end
   end)
   defp key(<<_rest::bits>>, original, skip, _stack, _key_decode, _value) do
-    error(original, skip)
+    empty_error(original, skip)
   end
 
   ranges = [{?\", :continue}, {?\\, :escape}, {0x00..0x1F, :error}]
@@ -382,7 +385,7 @@ defmodule Antidote.Parser do
     string(rest, original, skip, stack, key_decode, len + 4)
   end
   defp string(<<_rest::bits>>, original, skip, _stack, _key_decode, len) do
-    error(original, skip + len)
+    empty_error(original, skip + len)
   end
 
   Enum.map(string_jt, fn
@@ -418,7 +421,7 @@ defmodule Antidote.Parser do
     string(rest, original, skip, stack, key_decode, acc, len + 4)
   end
   defp string(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc, len) do
-    error(original, skip + len)
+    empty_error(original, skip + len)
   end
 
   escapes = Enum.zip('btnfr"\\/', '\b\t\n\f\r"\\/')
@@ -439,7 +442,7 @@ defmodule Antidote.Parser do
       end
   end)
   defp escape(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc) do
-    error(original, skip + 1)
+    empty_error(original, skip)
   end
 
   defmodule Unescape do
@@ -618,7 +621,7 @@ defmodule Antidote.Parser do
     Unescape.escapeu_first(int1, last, rest, original, skip, stack, key_decode, acc)
   end
   defp escapeu(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc) do
-    error(original, skip)
+    empty_error(original, skip)
   end
 
   # @compile {:inline, escapeu_last: 3}
@@ -647,6 +650,10 @@ defmodule Antidote.Parser do
 
   defp error(<<_rest::bits>>, original, skip, _stack, _key_decode) do
     error(original, skip - 1)
+  end
+
+  defp empty_error(_original, skip) do
+    throw {:position, skip}
   end
 
   @compile {:inline, error: 2, token_error: 2, token_error: 3}

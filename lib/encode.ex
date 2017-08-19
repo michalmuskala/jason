@@ -117,7 +117,7 @@ defmodule Antidote.Encode do
   end
 
   defp encode_list([head | tail], escape, encode_map, opts) do
-    '[' ++ [encode_dispatch(head, escape, encode_map, opts)
+    [?[, encode_dispatch(head, escape, encode_map, opts)
      | encode_list_loop(tail, escape, encode_map, opts)]
   end
 
@@ -192,7 +192,9 @@ defmodule Antidote.Encode do
   end
 
   defp encode_struct(value, _opts, Decimal) do
-    [?\", Decimal.to_string(value, :normal), ?\"]
+    # silence the xref warning
+    decimal = Decimal
+    [?\", decimal.to_string(value, :normal), ?\"]
   end
 
   defp encode_struct(value, _opts, Antidote.Fragment) do

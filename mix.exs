@@ -21,33 +21,21 @@ defmodule Antidote.Mixfile do
   defp deps do
     [
       {:decimal, "~> 1.0", optional: true},
-      {:benchee, "~> 0.8", only: :bench},
-      {:benchee_html, "~> 0.1", only: :bench},
-      {:poison, "~> 3.0", only: :bench},
-      {:exjsx, "~> 4.0", only: :bench},
-      {:tiny, "~> 1.0", only: :bench},
-      {:jsone, "~> 1.4", only: :bench},
-      {:jiffy, "~> 0.14",  only: :bench},
-      {:json, "~> 1.0", only: :bench}
+      {:benchee, "~> 0.8", only: :dev},
+      {:benchee_html, "~> 0.1", only: :dev},
+      {:poison, "~> 3.0", only: :dev},
+      {:exjsx, "~> 4.0", only: :dev},
+      {:tiny, "~> 1.0", only: :dev},
+      {:jsone, "~> 1.4", only: :dev},
+      {:jiffy, "~> 0.14",  only: :dev},
+      {:json, "~> 1.0", only: :dev}
     ]
   end
 
   defp aliases do
-    ["bench": &bench/1]
-  end
-
-  defp bench(["encode"]) do
-    {_, res} = System.cmd("mix", ~w(run bench/encode.exs),
-      env: %{"MIX_ENV" => "bench"}, into: IO.stream(:stdio, :line))
-    if res > 0 do
-      System.at_exit(fn _ -> exit({:shutdown, res}) end)
-    end
-  end
-  defp bench(["decode"]) do
-    {_, res} = System.cmd("mix", ~w(run bench/decode.exs),
-      env: %{"MIX_ENV" => "bench"}, into: IO.stream(:stdio, :line))
-    if res > 0 do
-      System.at_exit(fn _ -> exit({:shutdown, res}) end)
-    end
+    [
+      "bench.encode": ["run bench/encode.exs"],
+      "bench.decode": ["run bench/decode.exs"]
+    ]
   end
 end
