@@ -7,14 +7,25 @@ defmodule Antidote do
 
   @spec decode(String.t, Keyword.t) :: {:ok, term} | {:error, Antidote.ParseError.t}
   def decode(input, opts \\ []) do
-    Antidote.Parser.parse(input, format_decode_opts(opts))
+    case Antidote.Parser.parse(input, format_decode_opts(opts)) do
+      {:ok, result} -> {:ok, result, ""}
+      {:ok, result, rest} -> {:ok, result, rest}
+      {:continuation, cont, _pos} -> {:more, cont}
+      {:error, error} -> {:error, error}
+    end
   end
 
   @spec decode!(String.t, Keyword.t) :: term | no_return
   def decode!(input, opts \\ []) do
     case Antidote.Parser.parse(input, format_decode_opts(opts)) do
-      {:ok, result} -> result
-      {:error, error} -> raise error
+      {:ok, result} ->
+        result
+      {:ok, _result, rest} ->
+        raise %Antidote.ParseError{extra: rest}
+      {:error, error} ->
+        raise error
+      {:continuation, _cont, pos} ->
+        raise %Antidote.ParseError{position: pos, data: :eof}
     end
   end
 

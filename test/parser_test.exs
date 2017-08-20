@@ -6,7 +6,7 @@ defmodule Antidote.ParserTest do
   test "numbers" do
     assert_fail_with "-", "unexpected end of input at position 1"
     assert_fail_with "--1", "unexpected byte at position 1: 0x2D ('-')"
-    assert_fail_with "01", "unexpected byte at position 1: 0x31 ('1')"
+    assert_fail_with "01", "unexpected extra input after valid json: \"1\""
     assert_fail_with ".1", "unexpected byte at position 0: 0x2E ('.')"
     assert_fail_with "1.", "unexpected end of input at position 2"
     assert_fail_with "1e", "unexpected end of input at position 2"
