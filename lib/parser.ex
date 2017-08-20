@@ -489,8 +489,8 @@ defmodule Antidote.Parser do
         string(rest, original, skip, stack, key_decode, len + 1)
       end
     {byte, :error} ->
-      defp string(<<unquote(byte), _rest::bits>>, original, skip, _stack, _key_decode, _len) do
-        error(original, skip)
+      defp string(<<unquote(byte), _rest::bits>>, original, skip, _stack, _key_decode, len) do
+        error(original, skip + len)
       end
   end)
   defp string(<<char::utf8, rest::bits>>, original, skip, stack, key_decode, len)
@@ -504,9 +504,36 @@ defmodule Antidote.Parser do
   defp string(<<_char::utf8, rest::bits>>, original, skip, stack, key_decode, len) do
     string(rest, original, skip, stack, key_decode, len + 4)
   end
-  # TODO: how to do continuation here?
+  defp string(<<>>, original, skip, stack, key_decode, len) do
+    part = binary_part(original, skip, len)
+    continuation(&string(&1, &1, 0, stack, key_decode, part, 0))
+  end
+  defp string(<<0b110::3, _rest::bits>>, original, skip, stack, key_decode, len) do
+    acc = binary_part(original, skip, len)
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 2 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
+  defp string(<<0b1110::4, _rest::bits>>, original, skip, stack, key_decode, len) do
+    acc = binary_part(original, skip, len)
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 3 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
+  defp string(<<0b11110::5, _rest::bits>>, original, skip, stack, key_decode, len) do
+    acc = binary_part(original, skip, len)
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 4 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
   defp string(<<_rest::bits>>, original, skip, _stack, _key_decode, len) do
-    empty_error(original, skip + len)
+    error(original, skip + len)
   end
 
   Enum.map(string_jt, fn
@@ -541,7 +568,34 @@ defmodule Antidote.Parser do
   defp string(<<_char::utf8, rest::bits>>, original, skip, stack, key_decode, acc, len) do
     string(rest, original, skip, stack, key_decode, acc, len + 4)
   end
-  # TODO: how to do continuation here?
+  defp string(<<>>, original, skip, stack, key_decode, acc, len) do
+    acc = [acc | binary_part(original, skip, len)]
+    continuation(&string(&1, &1, 0, stack, key_decode, acc, 0))
+  end
+  defp string(<<0b110::3, _rest::bits>>, original, skip, stack, key_decode, acc, len) do
+    acc = [acc | binary_part(original, skip, len)]
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 2 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
+  defp string(<<0b1110::4, _rest::bits>>, original, skip, stack, key_decode, acc, len) do
+    acc = [acc | binary_part(original, skip, len)]
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 3 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
+  defp string(<<0b11110::5, _rest::bits>>, original, skip, stack, key_decode, acc, len) do
+    acc = [acc | binary_part(original, skip, len)]
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 4 - left_bytes
+    continuation = &string(&1, &1, 0, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
   defp string(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc, len) do
     empty_error(original, skip + len)
   end
@@ -567,32 +621,56 @@ defmodule Antidote.Parser do
     continuation(&escape(&1, &1, 0, stack, key_decode, acc))
   end
   defp escape(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc) do
-    empty_error(original, skip)
+    error(original, skip)
   end
 
   defp escapeu(<<int1::16, int2::16, rest::bits>>, original, skip, stack, key_decode, acc) do
     last = escapeu_last(int2, original, skip)
     Codegen.escapeu_first(int1, last, rest, original, skip, stack, key_decode, acc)
   end
-  # TODO: how to do continuation here?
-  defp escapeu(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc) do
-    empty_error(original, skip)
+  defp escapeu(<<_bad::binary-size(4), _rest::bits>>, original, skip, _stack, _key_decode, _acc) do
+    error(original, skip)
   end
-
-  # @compile {:inline, escapeu_last: 3}
+  defp escapeu(<<_rest::bits>>, original, skip, stack, key_decode, acc) do
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 4 - left_bytes
+    continuation = &escapeu(&1, &1, -6, stack, key_decode, acc)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
 
   defp escapeu_last(int, original, skip) do
     Codegen.escapeu_last(int, original, skip)
   end
 
-  defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>, original,
-       skip, stack, key_decode, acc, hi) do
+  defp escape_surrogate(<<?\\, ?u, int1::16, int2::16, rest::bits>>,
+                        original, skip, stack, key_decode, acc, hi) do
     last = escapeu_last(int2, original, skip + 6)
     Codegen.escapeu_surrogate(int1, last, rest, original, skip, stack, key_decode, acc, hi)
   end
-  # TODO: how to do continuation here?
-  defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _key_decode, _acc, _hi) do
+  defp escape_surrogate(<<_bad::binary-size(6), _rest::bits>>,
+                        original, skip, _stack, _key_decode, _acc, _hi) do
     error(original, skip + 6)
+  end
+  defp escape_surrogate(<<_rest::bits>>, original, skip, stack, key_decode, acc, hi) do
+    left_bytes = byte_size(original) - skip
+    left = binary_part(original, skip, left_bytes)
+    expected = 6 - left_bytes
+    continuation = &escape_surrogate(&1, &1, -6, stack, key_decode, acc, hi)
+    continuation(&expect_bytes(&1, expected, left, continuation))
+  end
+
+  defp expect_bytes(input, expected, left, continuation) do
+    case input do
+      <<input::binary-size(expected), rest::bits>> ->
+        # Don't call with all data to limit copying as much as possible
+        input = left <> input
+        {:continuation, continuation} = continuation.(input)
+        continuation.(rest)
+      _ ->
+        expected = expected - byte_size(input)
+        continuation(&expect_bytes(&1, expected, left <> input, continuation))
+    end
   end
 
   defp try_parse_float(string, token, skip) do
