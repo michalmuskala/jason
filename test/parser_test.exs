@@ -62,6 +62,7 @@ defmodule Antidote.ParserTest do
 
     assert parse!("{}") == %{}
     assert parse!(~s({"foo": "bar"})) == %{"foo" => "bar"}
+    assert parse!(~s({"foo"  : "bar"})) == %{"foo" => "bar"}
 
     expected = %{"foo" => "bar", "baz" => "quux"}
     assert parse!(~s({"foo": "bar", "baz": "quux"})) == expected
@@ -82,6 +83,11 @@ defmodule Antidote.ParserTest do
     end
     key = String.to_atom(key)
     assert parse!(~s({"#{key}": "value"}), keys: :atoms) == %{key => "value"}
+  end
+
+  test "custom object key mapping function" do
+    assert parse!("{}", keys: &String.downcase/1) == %{}
+    assert parse!(~s({"FOO": "bar"}), keys: &String.downcase/1) == %{"foo" => "bar"}
   end
 
   test "arrays" do
