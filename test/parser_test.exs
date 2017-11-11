@@ -85,6 +85,20 @@ defmodule Antidote.ParserTest do
     assert parse!(~s({"#{key}": "value"}), keys: :atoms) == %{key => "value"}
   end
 
+  test "copying keys on decode" do
+    assert parse!("{}", keys: :copy) == %{}
+
+    # Regular decode references the original string
+    assert [{key, "bar"}] = Map.to_list(parse!(~s({"foo": "bar"})))
+    assert key == "foo"
+    assert :binary.referenced_byte_size(key) == 14
+
+    # Copy decode, copies the key
+    assert [{key, "bar"}] = Map.to_list(parse!(~s({"foo": "bar"}), keys: :copy))
+    assert key == "foo"
+    assert :binary.referenced_byte_size(key) == 3
+  end
+
   test "custom object key mapping function" do
     assert parse!("{}", keys: &String.downcase/1) == %{}
     assert parse!(~s({"FOO": "bar"}), keys: &String.downcase/1) == %{"foo" => "bar"}

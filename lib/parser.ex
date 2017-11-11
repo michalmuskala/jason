@@ -58,6 +58,7 @@ defmodule Antidote.Parser do
   defp key_decode_function(%{keys: :atoms}), do: &String.to_atom/1
   defp key_decode_function(%{keys: :atoms!}), do: &String.to_existing_atom/1
   defp key_decode_function(%{keys: :strings}), do: &(&1)
+  defp key_decode_function(%{keys: :copy}), do: &:binary.copy/1
   defp key_decode_function(%{keys: fun}) when is_function(fun, 1), do: fun
 
   defp value(data, original, skip, stack, key_decode) do
