@@ -7,6 +7,7 @@ defmodule Antidote.Mixfile do
       version: "0.1.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
+      consolidate_protocols: Mix.env != :test,
       deps: deps(),
       aliases: aliases()
     ]

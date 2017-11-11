@@ -37,7 +37,7 @@ defmodule Antidote.Helpers do
       try do
         {unquote(escape), unquote(encode_map), unquote(encode_opts)} =
           Antidote.Helpers.__prepare_opts__(unquote(opts))
-        Antidote.Fragment.new(unquote(kv_iodata))
+        %Antidote.Fragment{iodata: unquote(kv_iodata)}
       catch
         {:antidote_encode_error, err} ->
           raise Antidote.EncodeError, err
@@ -72,7 +72,7 @@ defmodule Antidote.Helpers do
           Antidote.Helpers.__prepare_opts__(unquote(opts))
         case unquote(map) do
           %{unquote_splicing(kv)} ->
-            Antidote.Fragment.new(unquote(kv_iodata))
+            %Antidote.Fragment{iodata: unquote(kv_iodata)}
           other ->
             raise ArgumentError, "expected a map with keys: #{inspect unquote(take)}, got: #{inspect other}"
         end

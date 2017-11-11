@@ -84,37 +84,43 @@ defmodule Antidote.EncoderTest do
     assert to_json(datetime) == ~s("2000-01-01T12:13:14.050Z")
   end
 
-  # defmodule Derived do
-  #   @derive [Poison.Encoder]
-  #   defstruct name: ""
-  # end
+  defmodule Derived do
+    @derive Antidote.Encoder
+    defstruct name: ""
+  end
 
-  # defmodule DerivedUsingOnly do
-  #   @derive {Poison.Encoder, only: [:name]}
-  #   defstruct name: "", size: 0
-  # end
+  defmodule DerivedUsingOnly do
+    @derive {Antidote.Encoder, only: [:name]}
+    defstruct name: "", size: 0
+  end
 
-  # defmodule DerivedUsingExcept do
-  #   @derive {Poison.Encoder, except: [:name]}
-  #   defstruct name: "", size: 0
-  # end
+  defmodule DerivedUsingExcept do
+    @derive {Antidote.Encoder, except: [:name]}
+    defstruct name: "", size: 0
+  end
 
-  # defmodule NonDerived do
-  #   defstruct name: ""
-  # end
+  defmodule NonDerived do
+    defstruct name: ""
+  end
 
-  # test "@derive" do
-  #   derived = %Derived{name: "derived"}
-  #   non_derived = %NonDerived{name: "non-derived"}
-  #   assert Poison.Encoder.impl_for!(derived) == Poison.Encoder.Poison.EncoderTest.Derived
-  #   assert Poison.Encoder.impl_for!(non_derived) == Poison.Encoder.Any
+  test "@derive" do
+    derived = %Derived{name: "derived"}
+    assert Antidote.Encoder.impl_for!(derived) == Antidote.Encoder.Antidote.EncoderTest.Derived
+    assert Antidote.decode!(to_json(derived)) == %{"name" => "derived"}
 
-  #   derived_using_only = %DerivedUsingOnly{name: "derived using :only", size: 10}
-  #   assert Poison.decode!(to_json(derived_using_only)) == %{"name" => "derived using :only"}
+    non_derived = %NonDerived{name: "non-derived"}
+    assert Antidote.Encoder.impl_for!(non_derived) == Antidote.Encoder.Any
+    assert_raise Protocol.UndefinedError, fn ->
+      to_json(non_derived)
+    end
 
-  #   derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
-  #   assert Poison.decode!(to_json(derived_using_except)) == %{"size" => 10}
-  # end
+    derived_using_only = %DerivedUsingOnly{name: "derived using :only", size: 10}
+    assert Antidote.decode!(to_json(derived_using_only)) == %{"name" => "derived using :only"}
+
+    derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
+    assert Antidote.decode!(to_json(derived_using_except)) == %{"size" => 10}
+
+  end
 
   test "EncodeError" do
     assert_raise Protocol.UndefinedError, fn ->

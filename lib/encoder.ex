@@ -1,10 +1,49 @@
 defprotocol Antidote.Encoder do
+  @fallback_to_any true
+
   @type t :: term
-  @type opts :: %{escape: Antidote.escape, validate: Antidote.validate,
-                  maps: Antidote.maps}
+  @type opts :: %{escape: Antidote.escape(), validate: Antidote.validate(), maps: Antidote.maps()}
 
   @spec encode(t, opts) :: iodata
   def encode(value, opts)
+end
+
+defimpl Antidote.Encoder, for: Any do
+  defmacro __deriving__(module, struct, opts) do
+    fields = fields_to_encode(struct, opts)
+
+    quote do
+      defimpl Antidote.Encoder, for: unquote(module) do
+        require Antidote.Helpers
+
+        def encode(struct, opts) do
+          %Antidote.Fragment{iodata: iodata} =
+            Antidote.Helpers.json_map_take(struct, unquote(fields), opts)
+          iodata
+        end
+      end
+    end
+  end
+
+  def encode(value, _opts) do
+    raise Protocol.UndefinedError,
+      protocol: @protocol,
+      value: value,
+      description: "an explicit protocol implementation is required."
+  end
+
+  defp fields_to_encode(struct, opts) do
+    cond do
+      only = Keyword.get(opts, :only) ->
+        only
+
+      except = Keyword.get(opts, :except) ->
+        Map.keys(struct) -- [:__struct__ | except]
+
+      true ->
+        Map.keys(struct) -- [:__struct__]
+    end
+  end
 end
 
 # The following implementations are formality - they are already covered
