@@ -24,9 +24,9 @@ defmodule Antidote.Encode do
     encode_map = encode_map_function(opts)
     try do
       {:ok, encode_dispatch(value, escape, encode_map, opts)}
-    catch
-      {:antidote_encode_error, err} ->
-        {:error, EncodeError.exception(err)}
+    rescue
+      e in EncoderError ->
+        {:error, e}
     end
   end
 
@@ -364,7 +364,6 @@ defmodule Antidote.Encode do
 
   @compile {:inline, encode_error: 1}
   defp encode_error(error) do
-    throw {:antidote_encode_error, error}
+    raise EncodeError, error
   end
 end
-

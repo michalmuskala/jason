@@ -24,7 +24,7 @@ defmodule Antidote.Helpers do
   ## Example
 
       iex> json_map(foo: 1, bar: 2)
-      %Antidote.Fragment{iodata: ["{\"foo\":", "1", ",\"bar\":", "2", "}"]}
+      %Antidote.Fragment{iodata: ["{\"foo\":", "1", ",\"bar\":", "2", 125]}
 
   """
   defmacro json_map(kv, opts \\ []) do
@@ -34,14 +34,9 @@ defmodule Antidote.Helpers do
     encode_args = [escape, encode_map, encode_opts]
     kv_iodata = build_kv_iodata(Macro.expand(kv, __CALLER__), encode_args)
     quote do
-      try do
-        {unquote(escape), unquote(encode_map), unquote(encode_opts)} =
-          Antidote.Helpers.__prepare_opts__(unquote(opts))
-        %Antidote.Fragment{iodata: unquote(kv_iodata)}
-      catch
-        {:antidote_encode_error, err} ->
-          raise Antidote.EncodeError, err
-      end
+      {unquote(escape), unquote(encode_map), unquote(encode_opts)} =
+        Antidote.Helpers.__prepare_opts__(unquote(opts))
+      %Antidote.Fragment{iodata: unquote(kv_iodata)}
     end
   end
 
@@ -56,29 +51,25 @@ defmodule Antidote.Helpers do
 
       iex> map = %{a: 1, b: 2, c: 3}
       iex> json_map_take(map, [:c, :b])
-      %Antidote.Fragment{iodata: ["{\"c\":", "3", ",\"b\":", "2", "}"]}
+      %Antidote.Fragment{iodata: ["{\"c\":", "3", ",\"b\":", "2", 125]}
 
   """
   defmacro json_map_take(map, take, opts \\ []) do
-    kv = Enum.map(Macro.expand(take, __CALLER__), &{&1, Macro.var(&1, __MODULE__)})
+    take = Macro.expand(take, __CALLER__)
+    kv = Enum.map(take, &{&1, Macro.var(&1, __MODULE__)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
     encode_opts = quote(do: opts)
     encode_args = [escape, encode_map, encode_opts]
     kv_iodata = build_kv_iodata(kv, encode_args)
     quote do
-      try do
-        {unquote(escape), unquote(encode_map), unquote(encode_opts)} =
-          Antidote.Helpers.__prepare_opts__(unquote(opts))
-        case unquote(map) do
-          %{unquote_splicing(kv)} ->
-            %Antidote.Fragment{iodata: unquote(kv_iodata)}
-          other ->
-            raise ArgumentError, "expected a map with keys: #{inspect unquote(take)}, got: #{inspect other}"
-        end
-      catch
-        {:antidote_encode_error, err} ->
-          raise Antidote.EncodeError, err
+      {unquote(escape), unquote(encode_map), unquote(encode_opts)} =
+        Antidote.Helpers.__prepare_opts__(unquote(opts))
+      case unquote(map) do
+        %{unquote_splicing(kv)} ->
+          %Antidote.Fragment{iodata: unquote(kv_iodata)}
+        other ->
+          raise ArgumentError, "expected a map with keys: #{unquote(inspect(take))}, got: #{inspect other}"
       end
     end
   end
@@ -88,7 +79,7 @@ defmodule Antidote.Helpers do
       kv
       |> Enum.map(&encode_pair(&1, encode_args))
       |> Enum.intersperse(",")
-    collapse_static(List.flatten(["{", elements, "}"]))
+    collapse_static(List.flatten(["{", elements] ++ '}'))
   end
 
   defp encode_pair({key, value}, encode_args) do
