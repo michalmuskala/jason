@@ -114,7 +114,7 @@ defmodule Antidote.Helpers do
   end
 
   def __prepare_opts__(opts) do
-    opts = Enum.into(opts, %{escape: :json, validate: true, maps: :naive})
+    opts = Enum.into(opts, %{escape: :json, maps: :naive})
     {Encode.escape_function(opts), Encode.encode_map_function(opts), opts}
   end
 

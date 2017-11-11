@@ -37,15 +37,12 @@ defmodule Antidote.Encode do
     end
   end
 
-  def escape_function(%{escape: escape, validate: validate}) do
-    case {escape, validate} do
-      {:json, true} -> &escape_json_strict/4
-      {:json, false} -> &escape_json_naive/4
-      # {:unicode, _} -> &escape_unicode/3
-      # {:html, true} -> &escape_html_validate/3
-      # {:html, false} -> &escape_html_naive/3
-      # {:javascript, true} -> &escape_javascript_validate/3
-      # {:javascript, false} -> &escape_javascript_naive/3
+  def escape_function(%{escape: escape}) do
+    case escape do
+      :json -> &escape_json/4
+      # :unicode -> &escape_unicode/3
+      # :html -> &escape_html/3
+      # :javascript -> &escape_javascript/3
       _ -> fn _,_,_,_ -> raise "not supported" end
     end
   end
@@ -240,125 +237,75 @@ defmodule Antidote.Encode do
       defp escape(unquote(byte)), do: unquote(<<?\\, char>>)
   end)
 
-  ## JSON naive escape
+  ## regular JSON escape
 
-  json_naive_jt = Codegen.jump_table(ranges, :chunk, 0x5C + 1)
+  json_jt = Codegen.jump_table(ranges, :chunk, 0x7F + 1)
 
-  defp escape_json_naive(data, original, skip, tail) do
-    escape_json_naive(data, [], original, skip, tail)
+  defp escape_json(data, original, skip, tail) do
+    escape_json(data, [], original, skip, tail)
   end
 
-  Enum.map(json_naive_jt, fn
+  Enum.map(json_jt, fn
     {byte, :chunk} ->
-      defp escape_json_naive(<<byte, rest::bits>>, acc, original, skip, tail)
+      defp escape_json(<<byte, rest::bits>>, acc, original, skip, tail)
            when byte === unquote(byte) do
-        escape_json_naive_chunk(rest, acc, original, skip, tail, 1)
+        escape_json_chunk(rest, acc, original, skip, tail, 1)
       end
     {byte, _escape} ->
-      defp escape_json_naive(<<byte, rest::bits>>, acc, original, skip, tail)
+      defp escape_json(<<byte, rest::bits>>, acc, original, skip, tail)
            when byte === unquote(byte) do
         acc = [acc | escape(byte)]
-        escape_json_naive(rest, acc, original, skip + 1, tail)
+        escape_json(rest, acc, original, skip + 1, tail)
       end
   end)
-  defp escape_json_naive(<<_byte, rest::bits>>, acc, original, skip, tail) do
-    escape_json_naive_chunk(rest, acc, original, skip, tail, 1)
-  end
-  defp escape_json_naive(<<>>, acc, _original, _skip, tail) do
-    [acc | tail]
-  end
-
-  Enum.map(json_naive_jt, fn
-    {byte, :chunk} ->
-      defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
-           when byte === unquote(byte) do
-        escape_json_naive_chunk(rest, acc, original, skip, tail, len + 1)
-      end
-    {byte, _escape} ->
-      defp escape_json_naive_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
-           when byte === unquote(byte) do
-        part = binary_part(original, skip, len)
-        acc = [acc, part | escape(byte)]
-        escape_json_naive(rest, acc, original, skip + len + 1, tail)
-      end
-  end)
-  defp escape_json_naive_chunk(<<_byte, rest::bits>>, acc, original, skip, tail, len) do
-    escape_json_naive_chunk(rest, acc, original, skip, tail, len + 1)
-  end
-  defp escape_json_naive_chunk(<<>>, acc, original, skip, tail, len) do
-    part = binary_part(original, skip, len)
-    [acc, part | tail]
-  end
-
-  ## JSON strict escape
-
-  json_strict_jt = Codegen.jump_table(ranges, :chunk, 0x7F + 1)
-
-  defp escape_json_strict(data, original, skip, tail) do
-    escape_json_strict(data, [], original, skip, tail)
-  end
-
-  Enum.map(json_strict_jt, fn
-    {byte, :chunk} ->
-      defp escape_json_strict(<<byte, rest::bits>>, acc, original, skip, tail)
-           when byte === unquote(byte) do
-        escape_json_strict_chunk(rest, acc, original, skip, tail, 1)
-      end
-    {byte, _escape} ->
-      defp escape_json_strict(<<byte, rest::bits>>, acc, original, skip, tail)
-           when byte === unquote(byte) do
-        acc = [acc | escape(byte)]
-        escape_json_strict(rest, acc, original, skip + 1, tail)
-      end
-  end)
-  defp escape_json_strict(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+  defp escape_json(<<char::utf8, rest::bits>>, acc, original, skip, tail)
        when char <= 0x7FF do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, 2)
+    escape_json_chunk(rest, acc, original, skip, tail, 2)
   end
-  defp escape_json_strict(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+  defp escape_json(<<char::utf8, rest::bits>>, acc, original, skip, tail)
        when char <= 0xFFFF do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, 3)
+    escape_json_chunk(rest, acc, original, skip, tail, 3)
   end
-  defp escape_json_strict(<<_char::utf8, rest::bits>>, acc, original, skip, tail) do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, 4)
+  defp escape_json(<<_char::utf8, rest::bits>>, acc, original, skip, tail) do
+    escape_json_chunk(rest, acc, original, skip, tail, 4)
   end
-  defp escape_json_strict(<<>>, acc, _original, _skip, tail) do
+  defp escape_json(<<>>, acc, _original, _skip, tail) do
     [acc | tail]
   end
-  defp escape_json_strict(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
+  defp escape_json(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
     encode_error({:invalid_byte, byte, original})
   end
 
-  Enum.map(json_strict_jt, fn
+  Enum.map(json_jt, fn
     {byte, :chunk} ->
-      defp escape_json_strict_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+      defp escape_json_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
            when byte === unquote(byte) do
-        escape_json_strict_chunk(rest, acc, original, skip, tail, len + 1)
+        escape_json_chunk(rest, acc, original, skip, tail, len + 1)
       end
     {byte, _escape} ->
-      defp escape_json_strict_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+      defp escape_json_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
            when byte === unquote(byte) do
         part = binary_part(original, skip, len)
         acc = [acc, part | escape(byte)]
-        escape_json_strict(rest, acc, original, skip + len + 1, tail)
+        escape_json(rest, acc, original, skip + len + 1, tail)
       end
   end)
-  defp escape_json_strict_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+  defp escape_json_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
        when char <= 0x7FF do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, len + 2)
+    escape_json_chunk(rest, acc, original, skip, tail, len + 2)
   end
-  defp escape_json_strict_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+  defp escape_json_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
        when char <= 0xFFFF do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, len + 3)
+    escape_json_chunk(rest, acc, original, skip, tail, len + 3)
   end
-  defp escape_json_strict_chunk(<<_char::utf8, rest::bits>>, acc, original, skip, tail, len) do
-    escape_json_strict_chunk(rest, acc, original, skip, tail, len + 4)
+  defp escape_json_chunk(<<_char::utf8, rest::bits>>, acc, original, skip, tail, len) do
+    escape_json_chunk(rest, acc, original, skip, tail, len + 4)
   end
-  defp escape_json_strict_chunk(<<>>, acc, original, skip, tail, len) do
+  defp escape_json_chunk(<<>>, acc, original, skip, tail, len) do
     part = binary_part(original, skip, len)
     [acc, part | tail]
   end
-  defp escape_json_strict_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
+  defp escape_json_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
     encode_error({:invalid_byte, byte, original})
   end
 

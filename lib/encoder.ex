@@ -2,7 +2,7 @@ defprotocol Antidote.Encoder do
   @fallback_to_any true
 
   @type t :: term
-  @type opts :: %{escape: Antidote.escape(), validate: Antidote.validate(), maps: Antidote.maps()}
+  @type opts :: %{escape: Antidote.escape(), maps: Antidote.maps()}
 
   @spec encode(t, opts) :: iodata
   def encode(value, opts)

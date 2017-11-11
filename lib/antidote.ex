@@ -1,9 +1,8 @@
 defmodule Antidote do
   @type escape :: :json | :unicode | :html | :javascript
-  @type validate :: boolean
   @type maps :: :naive | :strict
 
-  @type encode_opt :: {:escape, escape} | {:validate, validate} | {:maps, maps}
+  @type encode_opt :: {:escape, escape} | {:maps, maps}
 
   @spec decode(String.t, Keyword.t) :: {:ok, term} | {:error, Antidote.ParseError.t}
   def decode(input, opts \\ []) do
@@ -48,7 +47,7 @@ defmodule Antidote do
   end
 
   defp format_encode_opts(opts) do
-    Enum.into(opts, %{escape: :json, validate: true, maps: :naive})
+    Enum.into(opts, %{escape: :json, maps: :naive})
   end
 
   defp format_decode_opts(opts) do

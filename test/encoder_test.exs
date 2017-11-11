@@ -137,7 +137,7 @@ defmodule Antidote.EncoderTest do
   end
 
   defp to_json(value) do
-    options = %{maps: :strict, escape: :json, validate: true}
+    options = %{maps: :strict, escape: :json}
     case Antidote.Encode.encode(value, options) do
       {:ok, result} -> IO.iodata_to_binary(result)
       {:error, err} -> raise err
