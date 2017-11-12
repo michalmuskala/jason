@@ -1,10 +1,62 @@
 defprotocol Antidote.Encoder do
+  @moduledoc """
+  Protocol controlling how a value is encoded to JSON.
+
+  The protocol implementation must return either iodata or
+  the `Antidote.Fragment` struct.
+
+  ## Deriving
+
+  The protocol allows leveraging the Elixir's `@derive` feature
+  to simplify protocol implementation in trivial cases. Accepted
+  options are:
+
+    * `:only` - encodes only values of specified keys.
+    * `:except` - encodes all struct fields except specified keys.
+
+  By default all keys except the `:__struct__` key are encoded.
+
+  ## Example
+
+  Let's assume a presence of the following struct:
+
+      defmodule Test do
+        defstruct [:foo, :bar, :baz]
+      end
+
+  If we were to call `@derive Antidote.Encoder` just before `defstruct`,
+  the follwing implementation would be generated:
+
+      defimpl Antidote.Encoder, for: Test do
+        def encode(value, opts) do
+          Antidote.Helpers.json_map_take(value, [:foo, :bar, :baz], opts)
+        end
+      end
+
+  If we called `@derive {Antidote.Encoder, only: [:foo]}, the following
+  implementation would be genrated:
+
+      defimpl Antidote.Encoder, for: Test do
+        def encode(value, opts) do
+          Antidote.Helpers.json_map_take(value, [:foo], opts)
+        end
+      end
+
+  If we called `@derive {Antidote.Encoder, except: [:foo]}`, the following
+  implementation would be generated:
+
+      defimpl Antidote.Encoder, for: Test do
+        def encode(value, opts) do
+          Antidote.Helpers.json_map_take(value, [:bar, :baz], opts)
+        end
+      end
+  """
   @fallback_to_any true
 
   @type t :: term
   @type opts :: %{escape: Antidote.escape(), maps: Antidote.maps()}
 
-  @spec encode(t, opts) :: iodata
+  @spec encode(t, opts) :: iodata | Antidote.Fragment.t
   def encode(value, opts)
 end
 
@@ -17,9 +69,7 @@ defimpl Antidote.Encoder, for: Any do
         require Antidote.Helpers
 
         def encode(struct, opts) do
-          %Antidote.Fragment{iodata: iodata} =
-            Antidote.Helpers.json_map_take(struct, unquote(fields), opts)
-          iodata
+          Antidote.Helpers.json_map_take(struct, unquote(fields), opts)
         end
       end
     end

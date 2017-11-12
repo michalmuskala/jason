@@ -78,7 +78,10 @@ defmodule Antidote.Encode do
   end
 
   def encode_dispatch(value, _escape, _encode_map, opts) do
-    Antidote.Encoder.encode(value, opts)
+    case Antidote.Encoder.encode(value, opts) do
+      %Antidote.Fragment{iodata: iodata} -> iodata
+      iodata when is_list(iodata) or is_binary(iodata) -> iodata
+    end
   end
 
   # @compile {:inline,
@@ -201,7 +204,10 @@ defmodule Antidote.Encode do
   end
 
   defp encode_struct(value, opts, _module) do
-    Antidote.Encoder.encode(value, opts)
+    case Antidote.Encoder.encode(value, opts) do
+      %Antidote.Fragment{iodata: iodata} -> iodata
+      iodata when is_list(iodata) or is_binary(iodata) -> iodata
+    end
   end
 
   def encode_key(atom, escape) when is_atom(atom) do
