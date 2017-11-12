@@ -41,7 +41,7 @@ defmodule Antidote.Encode do
     case escape do
       :json -> &escape_json/4
       # :unicode -> &escape_unicode/4
-      # :html -> &escape_html/4
+      :html_safe -> &escape_html/4
       :javascript -> &escape_javascript/4
       _ -> fn _,_,_,_ -> raise "not supported" end
     end
@@ -226,17 +226,27 @@ defmodule Antidote.Encode do
   slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')
   surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
-  escape_jt = Codegen.jump_table(ranges, :error)
+  html_ranges = [{0x00..0x1F, :unicode}, {?/, ?/} | slash_escapes]
+  escape_jt = Codegen.jump_table(html_ranges, :skip)
 
-  Enum.map(escape_jt, fn
+  Enum.each(escape_jt, fn
     {byte, :unicode} ->
       sequence = List.to_string(:io_lib.format("\\u~4.16.0B", [byte]))
       defp escape(unquote(byte)), do: unquote(sequence)
-    {byte, :error} ->
-      defp escape(unquote(byte)), do: :erlang.error(:badarg)
     {byte, char} when is_integer(char) ->
-      defp escape(unquote(byte)), do: unquote(<<?\\, char>>)
+       defp escape(unquote(byte)), do: unquote(<<?\\, char>>)
+    {_byte, :skip} ->
+      nil
   end)
+  defp escape(codepoint) do
+    prefix =
+      cond do
+        codepoint < 0xFF -> "0x00"
+        codepoint < 0xFFF -> "0x0"
+        true -> "0x"
+      end
+    [prefix | Integer.to_string(codepoint, 16)]
+  end
 
   ## regular JSON escape
 
@@ -389,6 +399,90 @@ defmodule Antidote.Encode do
     [acc, part | tail]
   end
   defp escape_javascript_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  ## javascript safe JSON escape
+
+  html_jt = Codegen.jump_table(html_ranges, :chunk, 0x7F + 1)
+
+  defp escape_html(data, original, skip, tail) do
+    escape_html(data, [], original, skip, tail)
+  end
+
+  Enum.map(html_jt, fn
+    {byte, :chunk} ->
+      defp escape_html(<<byte, rest::bits>>, acc, original, skip, tail)
+            when byte === unquote(byte) do
+        escape_html_chunk(rest, acc, original, skip, tail, 1)
+      end
+    {byte, _escape} ->
+      defp escape_html(<<byte, rest::bits>>, acc, original, skip, tail)
+            when byte === unquote(byte) do
+        acc = [acc | escape(byte)]
+        escape_html(rest, acc, original, skip + 1, tail)
+      end
+  end)
+  defp escape_html(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0x7FF do
+    escape_html_chunk(rest, acc, original, skip, tail, 2)
+  end
+  Enum.map(surogate_escapes, fn {byte, escape} ->
+    defp escape_html(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
+      acc = [acc | unquote(escape)]
+      escape_html(rest, acc, original, skip + 3, tail)
+    end
+  end)
+  defp escape_html(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0xFFFF do
+    escape_html_chunk(rest, acc, original, skip, tail, 3)
+  end
+  defp escape_html(<<_char::utf8, rest::bits>>, acc, original, skip, tail) do
+    escape_html_chunk(rest, acc, original, skip, tail, 4)
+  end
+  defp escape_html(<<>>, acc, _original, _skip, tail) do
+    [acc | tail]
+  end
+  defp escape_html(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  Enum.map(html_jt, fn
+    {byte, :chunk} ->
+      defp escape_html_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        escape_html_chunk(rest, acc, original, skip, tail, len + 1)
+      end
+    {byte, _escape} ->
+      defp escape_html_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        part = binary_part(original, skip, len)
+        acc = [acc, part | escape(byte)]
+        escape_html(rest, acc, original, skip + len + 1, tail)
+      end
+  end)
+  defp escape_html_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0x7FF do
+    escape_html_chunk(rest, acc, original, skip, tail, len + 2)
+  end
+  Enum.map(surogate_escapes, fn {byte, escape} ->
+    defp escape_html(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
+      acc = [acc | unquote(escape)]
+      escape_html(rest, acc, original, skip + 3, tail)
+    end
+  end)
+  defp escape_html_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0xFFFF do
+    escape_html_chunk(rest, acc, original, skip, tail, len + 3)
+  end
+  defp escape_html_chunk(<<_char::utf8, rest::bits>>, acc, original, skip, tail, len) do
+    escape_html_chunk(rest, acc, original, skip, tail, len + 4)
+  end
+  defp escape_html_chunk(<<>>, acc, original, skip, tail, len) do
+    part = binary_part(original, skip, len)
+    [acc, part | tail]
+  end
+  defp escape_html_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
     encode_error({:invalid_byte, byte, original})
   end
 

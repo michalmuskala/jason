@@ -25,11 +25,11 @@ defmodule Antidote.EncoderTest do
     assert to_json("\"") == ~s("\\"")
     assert to_json("\0") == ~s("\\u0000")
     assert to_json(<<31>>) == ~s("\\u001F")
-    # assert to_json("☃", escape: :unicode) == ~s("\\u2603")
-    # assert to_json("𝄞", escape: :unicode) == ~s("\\uD834\\uDD1E")
-    assert to_json("\u2028\u2029", escape: :javascript) == ~s("\\u2028\\u2029")
-    # assert to_json("</script>", escape: :html_safe) == ~s("<\\/script>")
-    # assert to_json(~s(<script>var s = "\u2028\u2029";</script>), escape: :html_safe) == ~s("<script>var s = \\\"\\u2028\\u2029\\\";<\\/script>")
+    # assert to_json("☃a", escape: :unicode) == ~s("\\u2603a")
+    # assert to_json("𝄞b", escape: :unicode) == ~s("\\uD834\\uDD1Eb")
+    assert to_json("\u2028\u2029abc", escape: :javascript) == ~s("\\u2028\\u2029abc")
+    assert to_json("</script>", escape: :html_safe) == ~s("<\\/script>")
+    assert to_json(~s(<script>var s = "\u2028\u2029";</script>), escape: :html_safe) == ~s("<script>var s = \\\"\\u2028\\u2029\\\";<\\/script>")
     assert to_json("áéíóúàèìòùâêîôûãẽĩõũ") == ~s("áéíóúàèìòùâêîôûãẽĩõũ")
 
     assert_raise Protocol.UndefinedError, fn ->
