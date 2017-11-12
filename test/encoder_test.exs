@@ -48,8 +48,8 @@ defmodule Antidote.EncoderTest do
     assert_raise Antidote.EncodeError, "duplicate key: foo", fn ->
       to_json(multi_key_map)
     end
-    # TODO: nonstrict version
-    # assert to_json(multi_key_map) == ~s({"foo":"foo1","foo":"foo2"})
+
+    assert to_json(multi_key_map, maps: :naive) == ~s({"foo":"foo2","foo":"foo1"})
   end
 
   test "list" do
