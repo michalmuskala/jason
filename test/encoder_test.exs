@@ -27,7 +27,7 @@ defmodule Antidote.EncoderTest do
     assert to_json(<<31>>) == ~s("\\u001F")
     # assert to_json("☃", escape: :unicode) == ~s("\\u2603")
     # assert to_json("𝄞", escape: :unicode) == ~s("\\uD834\\uDD1E")
-    # assert to_json("\u2028\u2029", escape: :javascript) == ~s("\\u2028\\u2029")
+    assert to_json("\u2028\u2029", escape: :javascript) == ~s("\\u2028\\u2029")
     # assert to_json("</script>", escape: :html_safe) == ~s("<\\/script>")
     # assert to_json(~s(<script>var s = "\u2028\u2029";</script>), escape: :html_safe) == ~s("<script>var s = \\\"\\u2028\\u2029\\\";<\\/script>")
     assert to_json("áéíóúàèìòùâêîôûãẽĩõũ") == ~s("áéíóúàèìòùâêîôûãẽĩõũ")
@@ -136,9 +136,9 @@ defmodule Antidote.EncoderTest do
     end
   end
 
-  defp to_json(value) do
-    options = %{maps: :strict, escape: :json}
-    case Antidote.Encode.encode(value, options) do
+  defp to_json(value, opts \\ []) do
+    opts = Enum.into(opts, %{maps: :strict, escape: :json})
+    case Antidote.Encode.encode(value, opts) do
       {:ok, result} -> IO.iodata_to_binary(result)
       {:error, err} -> raise err
     end

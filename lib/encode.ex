@@ -40,9 +40,9 @@ defmodule Antidote.Encode do
   def escape_function(%{escape: escape}) do
     case escape do
       :json -> &escape_json/4
-      # :unicode -> &escape_unicode/3
-      # :html -> &escape_html/3
-      # :javascript -> &escape_javascript/3
+      # :unicode -> &escape_unicode/4
+      # :html -> &escape_html/4
+      :javascript -> &escape_javascript/4
       _ -> fn _,_,_,_ -> raise "not supported" end
     end
   end
@@ -224,6 +224,7 @@ defmodule Antidote.Encode do
   end
 
   slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')
+  surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
   escape_jt = Codegen.jump_table(ranges, :error)
 
@@ -306,6 +307,88 @@ defmodule Antidote.Encode do
     [acc, part | tail]
   end
   defp escape_json_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  ## javascript safe JSON escape
+
+  defp escape_javascript(data, original, skip, tail) do
+    escape_javascript(data, [], original, skip, tail)
+  end
+
+  Enum.map(json_jt, fn
+    {byte, :chunk} ->
+      defp escape_javascript(<<byte, rest::bits>>, acc, original, skip, tail)
+            when byte === unquote(byte) do
+        escape_javascript_chunk(rest, acc, original, skip, tail, 1)
+      end
+    {byte, _escape} ->
+      defp escape_javascript(<<byte, rest::bits>>, acc, original, skip, tail)
+            when byte === unquote(byte) do
+        acc = [acc | escape(byte)]
+        escape_javascript(rest, acc, original, skip + 1, tail)
+      end
+  end)
+  defp escape_javascript(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0x7FF do
+    escape_javascript_chunk(rest, acc, original, skip, tail, 2)
+  end
+  Enum.map(surogate_escapes, fn {byte, escape} ->
+    defp escape_javascript(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
+      acc = [acc | unquote(escape)]
+      escape_javascript(rest, acc, original, skip + 3, tail)
+    end
+  end)
+  defp escape_javascript(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0xFFFF do
+    escape_javascript_chunk(rest, acc, original, skip, tail, 3)
+  end
+  defp escape_javascript(<<_char::utf8, rest::bits>>, acc, original, skip, tail) do
+    escape_javascript_chunk(rest, acc, original, skip, tail, 4)
+  end
+  defp escape_javascript(<<>>, acc, _original, _skip, tail) do
+    [acc | tail]
+  end
+  defp escape_javascript(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  Enum.map(json_jt, fn
+    {byte, :chunk} ->
+      defp escape_javascript_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        escape_javascript_chunk(rest, acc, original, skip, tail, len + 1)
+      end
+    {byte, _escape} ->
+      defp escape_javascript_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        part = binary_part(original, skip, len)
+        acc = [acc, part | escape(byte)]
+        escape_javascript(rest, acc, original, skip + len + 1, tail)
+      end
+  end)
+  defp escape_javascript_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0x7FF do
+    escape_javascript_chunk(rest, acc, original, skip, tail, len + 2)
+  end
+  Enum.map(surogate_escapes, fn {byte, escape} ->
+    defp escape_javascript(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
+      acc = [acc | unquote(escape)]
+      escape_javascript(rest, acc, original, skip + 3, tail)
+    end
+  end)
+  defp escape_javascript_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0xFFFF do
+    escape_javascript_chunk(rest, acc, original, skip, tail, len + 3)
+  end
+  defp escape_javascript_chunk(<<_char::utf8, rest::bits>>, acc, original, skip, tail, len) do
+    escape_javascript_chunk(rest, acc, original, skip, tail, len + 4)
+  end
+  defp escape_javascript_chunk(<<>>, acc, original, skip, tail, len) do
+    part = binary_part(original, skip, len)
+    [acc, part | tail]
+  end
+  defp escape_javascript_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
     encode_error({:invalid_byte, byte, original})
   end
 
