@@ -15,6 +15,8 @@ end
 defmodule Antidote.Encode do
   @moduledoc false
 
+  import Bitwise
+
   alias Antidote.{Codegen, EncodeError}
 
   # @compile :native
@@ -40,7 +42,7 @@ defmodule Antidote.Encode do
   def escape_function(%{escape: escape}) do
     case escape do
       :json -> &escape_json/4
-      # :unicode -> &escape_unicode/4
+      :unicode -> &escape_unicode/4
       :html_safe -> &escape_html/4
       :javascript -> &escape_javascript/4
       _ -> fn _,_,_,_ -> raise "not supported" end
@@ -227,26 +229,17 @@ defmodule Antidote.Encode do
   surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
   html_ranges = [{0x00..0x1F, :unicode}, {?/, ?/} | slash_escapes]
-  escape_jt = Codegen.jump_table(html_ranges, :skip)
+  escape_jt = Codegen.jump_table(html_ranges, :error)
 
   Enum.each(escape_jt, fn
     {byte, :unicode} ->
       sequence = List.to_string(:io_lib.format("\\u~4.16.0B", [byte]))
       defp escape(unquote(byte)), do: unquote(sequence)
     {byte, char} when is_integer(char) ->
-       defp escape(unquote(byte)), do: unquote(<<?\\, char>>)
-    {_byte, :skip} ->
-      nil
+      defp escape(unquote(byte)), do: unquote(<<?\\, char>>)
+    {byte, :error} ->
+      defp escape(unquote(byte)), do: throw(:error)
   end)
-  defp escape(codepoint) do
-    prefix =
-      cond do
-        codepoint < 0xFF -> "0x00"
-        codepoint < 0xFFF -> "0x0"
-        true -> "0x"
-      end
-    [prefix | Integer.to_string(codepoint, 16)]
-  end
 
   ## regular JSON escape
 
@@ -402,7 +395,7 @@ defmodule Antidote.Encode do
     encode_error({:invalid_byte, byte, original})
   end
 
-  ## javascript safe JSON escape
+  ## HTML safe JSON escape
 
   html_jt = Codegen.jump_table(html_ranges, :chunk, 0x7F + 1)
 
@@ -483,6 +476,107 @@ defmodule Antidote.Encode do
     [acc, part | tail]
   end
   defp escape_html_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  ## unicode escape
+
+  defp escape_unicode(data, original, skip, tail) do
+    escape_unicode(data, [], original, skip, tail)
+  end
+
+  Enum.map(json_jt, fn
+    {byte, :chunk} ->
+      defp escape_unicode(<<byte, rest::bits>>, acc, original, skip, tail)
+           when byte === unquote(byte) do
+        escape_unicode_chunk(rest, acc, original, skip, tail, 1)
+      end
+    {byte, _escape} ->
+      defp escape_unicode(<<byte, rest::bits>>, acc, original, skip, tail)
+           when byte === unquote(byte) do
+        acc = [acc | escape(byte)]
+        escape_unicode(rest, acc, original, skip + 1, tail)
+      end
+  end)
+  defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+       when char <= 0xFF do
+    acc = [acc, "\\u00" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + 2, tail)
+  end
+  defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0x7FF do
+    acc = [acc, "\\u0" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + 2, tail)
+  end
+  defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0xFFFF do
+    acc = [acc, "\\u" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + 3, tail)
+  end
+  defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail) do
+    char = char - 0x10000
+    acc =
+      [
+        acc,
+        "\\uD", Integer.to_string(0x800 ||| (char >>> 10), 16),
+        "\\uD" | Integer.to_string(0xC00 ||| (char &&& 0x3FF), 16)
+      ]
+    escape_unicode(rest, acc, original, skip + 4, tail)
+  end
+  defp escape_unicode(<<>>, acc, _original, _skip, tail) do
+    [acc | tail]
+  end
+  defp escape_unicode(<<byte, _rest::bits>>, _acc, original, _skip, _close) do
+    encode_error({:invalid_byte, byte, original})
+  end
+
+  Enum.map(json_jt, fn
+    {byte, :chunk} ->
+      defp escape_unicode_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        escape_unicode_chunk(rest, acc, original, skip, tail, len + 1)
+      end
+    {byte, _escape} ->
+      defp escape_unicode_chunk(<<byte, rest::bits>>, acc, original, skip, tail, len)
+            when byte === unquote(byte) do
+        part = binary_part(original, skip, len)
+        acc = [acc, part | escape(byte)]
+        escape_unicode(rest, acc, original, skip + len + 1, tail)
+      end
+  end)
+  defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+       when char <= 0xFF do
+    part = binary_part(original, skip, len)
+    acc = [acc, part, "\\u00" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + len + 2, tail)
+  end
+  defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0x7FF do
+    part = binary_part(original, skip, len)
+    acc = [acc, part, "\\u0" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + len + 2, tail)
+  end
+  defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0xFFFF do
+    part = binary_part(original, skip, len)
+    acc = [acc, part, "\\u" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + len + 3, tail)
+  end
+  defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len) do
+    part = binary_part(original, skip, len)
+    acc =
+      [
+        acc, part,
+        "\\uD", Integer.to_string(0x800 ||| (char >>> 10), 16),
+        "\\uD" | Integer.to_string(0xC00 ||| (char &&& 0x3FF), 16)
+      ]
+    escape_unicode(rest, acc, original, skip + len + 4, tail)
+  end
+  defp escape_unicode_chunk(<<>>, acc, original, skip, tail, len) do
+    part = binary_part(original, skip, len)
+    [acc, part | tail]
+  end
+  defp escape_unicode_chunk(<<byte, _rest::bits>>, _acc, original, _skip, _close, _len) do
     encode_error({:invalid_byte, byte, original})
   end
 
