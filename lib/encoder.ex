@@ -151,7 +151,9 @@ end
 
 defimpl Antidote.Encoder, for: Decimal do
   def encode(value, _opts) do
-    [?\", Decimal.to_string(value), ?\"]
+    # silence the xref warning
+    decimal = Decimal
+    [?\", decimal.to_string(value), ?\"]
   end
 end
 
