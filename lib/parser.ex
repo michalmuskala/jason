@@ -64,16 +64,16 @@ defmodule Antidote.Parser do
   defp string_decode_function(%{strings: :copy}), do: &:binary.copy/1
   defp string_decode_function(%{strings: :reference}), do: &(&1)
 
-  defp value(data, original, skip, stack, string_decode, key_decode) do
+  defp value(data, original, skip, stack, key_decode, string_decode) do
     bytecase data do
       _ in '\s\n\t\r', rest ->
-        value(rest, original, skip + 1, stack, string_decode, key_decode)
+        value(rest, original, skip + 1, stack, key_decode, string_decode)
       _ in '0', rest ->
         number_zero(rest, original, skip, stack, key_decode, string_decode, 1)
       _ in '123456789', rest ->
         number(rest, original, skip, stack, key_decode, string_decode, 1)
       _ in '-', rest ->
-        number_minus(rest, original, skip, stack, string_decode, key_decode)
+        number_minus(rest, original, skip, stack, key_decode, string_decode)
       _ in '"', rest ->
         string(rest, original, skip + 1, stack, key_decode, string_decode, 0)
       _ in '[', rest ->
@@ -104,7 +104,7 @@ defmodule Antidote.Parser do
             error(original, skip)
         end
       _, rest ->
-        error(rest, original, skip + 1, stack, string_decode, key_decode)
+        error(rest, original, skip + 1, stack, key_decode, string_decode)
       <<_::bits>> ->
         error(original, skip)
     end
@@ -286,7 +286,7 @@ defmodule Antidote.Parser do
         skip = skip + 1
         [key, acc | stack] = stack
         acc = [{key_decode.(key), value} | acc]
-        key(rest, original, skip, [acc | stack], string_decode, key_decode)
+        key(rest, original, skip, [acc | stack], key_decode, string_decode)
       _, _rest ->
         error(original, skip)
       <<_::bits>> ->
@@ -294,10 +294,10 @@ defmodule Antidote.Parser do
     end
   end
 
-  defp key(data, original, skip, stack, string_decode, key_decode) do
+  defp key(data, original, skip, stack, key_decode, string_decode) do
     bytecase data do
       _ in '\s\n\t\r', rest ->
-        key(rest, original, skip + 1, stack, string_decode, key_decode)
+        key(rest, original, skip + 1, stack, key_decode, string_decode)
       _ in '}', rest ->
         case stack do
           [[] | stack] ->
@@ -319,7 +319,7 @@ defmodule Antidote.Parser do
       _ in '\s\n\t\r', rest ->
         key(rest, original, skip + 1, stack, key_decode, string_decode, value)
       _ in ':', rest ->
-        value(rest, original, skip + 1, [@object, value | stack], string_decode, key_decode)
+        value(rest, original, skip + 1, [@object, value | stack], key_decode, string_decode)
       _, _rest ->
         error(original, skip)
       <<_::bits>> ->
