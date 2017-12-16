@@ -22,6 +22,7 @@ defmodule Antidote.Mixfile do
   defp deps do
     [
       {:decimal, "~> 1.0", optional: true},
+      {:stream_data, "~> 0.4", obly: :test},
       {:benchee, "~> 0.8", only: :dev},
       {:benchee_html, "~> 0.1", only: :dev},
       {:poison, "~> 3.0", only: :dev},

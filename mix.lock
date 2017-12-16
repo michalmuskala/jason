@@ -11,5 +11,6 @@
   "jsone": {:hex, :jsone, "1.4.5", "547aefec1c67fe3283f77bac4daf85f3f593002764f768faaa423875a51a2320", [:rebar3], [], "hexpm"},
   "jsx": {:hex, :jsx, "2.8.3", "a05252d381885240744d955fbe3cf810504eb2567164824e19303ea59eef62cf", [:mix, :rebar3], [], "hexpm"},
   "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], [], "hexpm"},
+  "stream_data": {:hex, :stream_data, "0.4.0", "128c01bfd0fae0108d169eee1772aeed6958604f8782abc2d6e11da4e52468b0", [], [], "hexpm"},
   "tiny": {:hex, :tiny, "1.0.1", "535ea7e600cb1c6ba17b53029266d9d7ec54ce29bfb05d906c433907acfa01ca", [:mix], [], "hexpm"},
 }
