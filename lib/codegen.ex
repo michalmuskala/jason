@@ -116,9 +116,9 @@ defmodule Antidote.Codegen do
   end
 
   defp encode_pair({key, value}, encode_args) do
-    key = IO.iodata_to_binary(Antidote.Encode.encode_key(key, &escape_key/4))
+    key = IO.iodata_to_binary(Antidote.Encode.key(key, &escape_key/4))
     key = "\"" <> key <> "\":"
-    [key, quote(do: Antidote.Encode.encode_dispatch(unquote(value), unquote_splicing(encode_args)))]
+    [key, quote(do: Antidote.Encode.value(unquote(value), unquote_splicing(encode_args)))]
   end
 
   defp escape_key(binary, _original, _skip, [] = _tail) do

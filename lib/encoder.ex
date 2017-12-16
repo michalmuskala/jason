@@ -25,37 +25,48 @@ defprotocol Antidote.Encoder do
       end
 
   If we were to call `@derive Antidote.Encoder` just before `defstruct`,
-  the follwing implementation would be generated:
+  an implementaion similar to the follwing implementation would be generated:
 
       defimpl Antidote.Encoder, for: Test do
+        alias Antidote.Encode
+
         def encode(value, opts) do
-          Antidote.Helpers.json_map_take(value, [:foo, :bar, :baz], opts)
+          Antidote.Encode.map(Map.take(value, [:foo, :bar, :baz]), opts)
         end
       end
 
-  If we called `@derive {Antidote.Encoder, only: [:foo]}`, the following
-  implementation would be genrated:
+  If we called `@derive {Antidote.Encoder, only: [:foo]}`, an implementation
+  similar to the following implementation would be genrated:
 
       defimpl Antidote.Encoder, for: Test do
         def encode(value, opts) do
-          Antidote.Helpers.json_map_take(value, [:foo], opts)
+          Antidote.Encode.map(Map.take(value, [:foo]), opts)
         end
       end
 
-  If we called `@derive {Antidote.Encoder, except: [:foo]}`, the following
-  implementation would be generated:
+  If we called `@derive {Antidote.Encoder, except: [:foo]}`, an implementation
+  similar to the following implementation would be generated:
 
       defimpl Antidote.Encoder, for: Test do
         def encode(value, opts) do
-          Antidote.Helpers.json_map_take(value, [:bar, :baz], opts)
+          Antidote.Encode.map(Map.take(value, [:bar, :baz]), opts)
         end
       end
+
+  The actually generated implementations are more efficient, and similar to the
+  macros from the `Antidote.Helpers` module.
   """
 
   @type t :: term
-  @opaque opts :: Antidote.Encode.opts()
+  @type opts :: Antidote.Encode.opts()
 
-  @spec encode(t, opts) :: iodata | Antidote.Fragment.t
+  @doc """
+  Encodes `value` to JSON.
+
+  The argument `opts` is opaque - it can be passed to various functions in
+  `Antidote.Encode` (or to the protocol function itself) for encoding values to JSON.
+  """
+  @spec encode(t, opts) :: iodata
   def encode(value, opts)
 end
 
@@ -106,37 +117,37 @@ end
 
 defimpl Antidote.Encoder, for: Atom do
   def encode(atom, opts) do
-    Antidote.Encode.encode_atom(atom, opts)
+    Antidote.Encode.atom(atom, opts)
   end
 end
 
 defimpl Antidote.Encoder, for: Integer do
   def encode(integer, _opts) do
-    Antidote.Encode.encode_integer(integer)
+    Antidote.Encode.integer(integer)
   end
 end
 
 defimpl Antidote.Encoder, for: Float do
   def encode(float, _opts) do
-    Antidote.Encode.encode_float(float)
+    Antidote.Encode.float(float)
   end
 end
 
 defimpl Antidote.Encoder, for: List do
   def encode(list, opts) do
-    Antidote.Encode.encode_list(list, opts)
+    Antidote.Encode.list(list, opts)
   end
 end
 
 defimpl Antidote.Encoder, for: Map do
   def encode(map, opts) do
-    Antidote.Encode.encode_map(map, opts)
+    Antidote.Encode.map(map, opts)
   end
 end
 
 defimpl Antidote.Encoder, for: BitString do
   def encode(binary, opts) when is_binary(binary) do
-    Antidote.Encode.encode_string(binary, opts)
+    Antidote.Encode.string(binary, opts)
   end
 
   def encode(bitstring, _opts) do
