@@ -22,10 +22,15 @@ defmodule Antidote do
       * `:strings` (default) - decodes keys as binary strings,
       * `:atoms` - keys are converted to atoms using `String.to_atom/1`,
       * `:atoms!` - keys are converted to atoms using `String.to_existing_atom/1`,
-      * `:copy` - decodes keys as binary strings and makes sure they don't reference
-        the original binary using `:binary.copy/1`
       * custom decoder - additionally a function accepting a string and returning a key
         is accepted.
+
+    * `:strings` - controls how strings (including keys) are decoded. Possible values are:
+
+      * `:reference` (default) - when possible tries to create a sub-binary into the original
+      * `:copy` - always copies the strings. This option is especially useful when parts of the
+        decoded data will be stored for a long time (in ets or some process) to avoid keeping
+        the reference to the original data.
 
   ## Decoding keys to atoms
 
@@ -134,6 +139,6 @@ defmodule Antidote do
   end
 
   defp format_decode_opts(opts) do
-    Enum.into(opts, %{keys: :strings})
+    Enum.into(opts, %{keys: :strings, strings: :reference})
   end
 end
