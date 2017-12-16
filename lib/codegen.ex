@@ -40,6 +40,15 @@ defmodule Antidote.Codegen do
     end
   end
 
+  def build_kv_iodata(kv, encode_args) do
+    elements =
+      kv
+      |> Enum.map(&encode_pair(&1, encode_args))
+      |> Enum.intersperse(",")
+
+    collapse_static(List.flatten(["{", elements] ++ '}'))
+  end
+
   defp clauses_to_ranges([{:->, _, [[{:in, _, [byte, range]}, rest], action]} | tail], acc) do
     clauses_to_ranges(tail, [{range, {byte, rest, action}} | acc])
   end
@@ -104,5 +113,39 @@ defmodule Antidote.Codegen do
         Enum.map(enum, &{&1, value})
     end)
     |> :orddict.from_list()
+  end
+
+  defp encode_pair({key, value}, encode_args) do
+    key = IO.iodata_to_binary(Antidote.Encode.encode_key(key, &escape_key/4))
+    key = "\"" <> key <> "\":"
+    [key, quote(do: Antidote.Encode.encode_dispatch(unquote(value), unquote_splicing(encode_args)))]
+  end
+
+  defp escape_key(binary, _original, _skip, [] = _tail) do
+    check_safe_key!(binary)
+    binary
+  end
+
+  defp check_safe_key!(binary) do
+    for <<(<<byte>> <- binary)>> do
+      if byte > 0x7F or byte < 0x1F or byte in '"\\/' do
+        raise Antidote.EncodeError,
+              "invalid byte #{inspect(byte, base: :hex)} in literal key: #{inspect(binary)}"
+      end
+    end
+
+    :ok
+  end
+
+  defp collapse_static([bin1, bin2 | rest]) when is_binary(bin1) and is_binary(bin2) do
+    collapse_static([bin1 <> bin2 | rest])
+  end
+
+  defp collapse_static([other | rest]) do
+    [other | collapse_static(rest)]
+  end
+
+  defp collapse_static([]) do
+    []
   end
 end

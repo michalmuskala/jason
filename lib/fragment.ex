@@ -1,11 +1,11 @@
 defmodule Antidote.Fragment do
-  defstruct [:iodata]
+  defstruct [:encode]
 
   def new(iodata) when is_list(iodata) or is_binary(iodata) do
-    %__MODULE__{iodata: iodata}
+    %__MODULE__{encode: fn _ -> iodata end}
   end
 
-  def collapse(%Antidote.Fragment{iodata: iodata} = fragment) do
-    %{fragment | iodata: IO.iodata_to_binary(iodata)}
+  def new(encode) when is_function(encode, 1) do
+    %__MODULE__{encode: encode}
   end
 end
