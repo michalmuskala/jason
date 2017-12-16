@@ -51,7 +51,6 @@ defprotocol Antidote.Encoder do
         end
       end
   """
-  @fallback_to_any true
 
   @type t :: term
   @type opts :: %{escape: Antidote.escape(), maps: Antidote.maps()}

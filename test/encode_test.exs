@@ -109,7 +109,6 @@ defmodule Antidote.EncoderTest do
     assert Antidote.decode!(to_json(derived)) == %{"name" => "derived"}
 
     non_derived = %NonDerived{name: "non-derived"}
-    assert Antidote.Encoder.impl_for!(non_derived) == Antidote.Encoder.Any
     assert_raise Protocol.UndefinedError, fn ->
       to_json(non_derived)
     end
