@@ -107,6 +107,16 @@ with `mix bench encode` and `mix bench decode`.
 A HTML report of the benchmarks (after their execution) can be found in
 `bench/output/encode.html` and `bench/output/decode.html` respectively.
 
+## Differences to Poison
+
+Antidote has a couple feature differences compared to Poison.
+
+  * no support for pretty printing.
+  * no encoders for `MapSet`, `HashSet`, `Range` and `Stream`.
+  * no support for encoding any structs - explicit deriving is required.
+
+The last two features are provided by the [`antidote_poison_compat` package](https://github.com/michalmuskala/antidote_poison_compat).
+
 ## License
 
 Antidote is released under the Apache 2.0 License - see the [LICENSE](LICENSE) file.
