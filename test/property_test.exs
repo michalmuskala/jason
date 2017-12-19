@@ -32,8 +32,37 @@ defmodule Antidote.PropertyTest do
     end
   end
 
+  property "unicode escaping" do
+    check all string <- string(:printable) do
+      encoded = encode(string, escape: :unicode)
+      for << <<byte>> <- encoded >> do
+        assert byte < 127
+      end
+      assert decode(encoded) == string
+    end
+  end
+
+  property "html_safe escaping" do
+    check all string <- string(:printable) do
+      encoded = encode(string, escape: :html_safe)
+      refute encoded =~ <<0x2028::utf8>>
+      refute encoded =~ <<0x2029::utf8>>
+      refute encoded =~ ~r"(?<!\\)/"
+      assert decode(encoded) == string
+    end
+  end
+
+  property "javascript escaping" do
+    check all string <- string(:printable) do
+      encoded = encode(string, escape: :javascript)
+      refute encoded =~ <<0x2028::utf8>>
+      refute encoded =~ <<0x2029::utf8>>
+      assert decode(encoded) == string
+    end
+  end
+
   defp decode(data, opts \\ []), do: Antidote.decode!(data, opts)
-  defp encode(data), do: Antidote.encode!(data)
+  defp encode(data, opts \\ []), do: Antidote.encode!(data, opts)
 
   defp json(keys) do
     simple = one_of([integer(), float(), string(:printable), boolean(), nil])

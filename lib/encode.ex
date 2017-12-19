@@ -52,7 +52,6 @@ defmodule Antidote.Encode do
       :unicode -> &escape_unicode/4
       :html_safe -> &escape_html/4
       :javascript -> &escape_javascript/4
-      _ -> fn _,_,_,_ -> raise "not supported" end
     end
   end
 
@@ -533,6 +532,11 @@ defmodule Antidote.Encode do
     escape_unicode(rest, acc, original, skip + 2, tail)
   end
   defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail)
+        when char <= 0xFFF do
+    acc = [acc, "\\u0" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + 3, tail)
+  end
+  defp escape_unicode(<<char::utf8, rest::bits>>, acc, original, skip, tail)
         when char <= 0xFFFF do
     acc = [acc, "\\u" | Integer.to_string(char, 16)]
     escape_unicode(rest, acc, original, skip + 3, tail)
@@ -581,12 +585,19 @@ defmodule Antidote.Encode do
     escape_unicode(rest, acc, original, skip + len + 2, tail)
   end
   defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
+        when char <= 0xFFF do
+    part = binary_part(original, skip, len)
+    acc = [acc, part, "\\u0" | Integer.to_string(char, 16)]
+    escape_unicode(rest, acc, original, skip + len + 3, tail)
+  end
+  defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
         when char <= 0xFFFF do
     part = binary_part(original, skip, len)
     acc = [acc, part, "\\u" | Integer.to_string(char, 16)]
     escape_unicode(rest, acc, original, skip + len + 3, tail)
   end
   defp escape_unicode_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len) do
+    char = char - 0x10000
     part = binary_part(original, skip, len)
     acc =
       [
