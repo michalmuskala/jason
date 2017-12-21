@@ -1,4 +1,4 @@
-defmodule Antidote.ParseError do
+defmodule Jason.DecodeError do
   @type t :: %__MODULE__{position: integer, data: String.t}
 
   defexception [:position, :token, :data]
@@ -22,12 +22,12 @@ defmodule Antidote.ParseError do
   end
 end
 
-defmodule Antidote.Parser do
+defmodule Jason.Decoder do
   @moduledoc false
 
   import Bitwise
 
-  alias Antidote.{ParseError, Codegen}
+  alias Jason.{DecodeError, Codegen}
 
   import Codegen, only: [bytecase: 2, bytecase: 3]
 
@@ -47,9 +47,9 @@ defmodule Antidote.Parser do
       value(data, data, 0, [@terminate], key_decode, string_decode)
     catch
       {:position, position} ->
-        {:error, %ParseError{position: position, data: data}}
+        {:error, %DecodeError{position: position, data: data}}
       {:token, token, position} ->
-        {:error, %ParseError{token: token, position: position, data: data}}
+        {:error, %DecodeError{token: token, position: position, data: data}}
     else
       value ->
         {:ok, value}
@@ -600,9 +600,9 @@ defmodule Antidote.Parser do
   end
 
   defp try_parse_float(string, token, skip) do
-    String.to_float(string)
-  rescue
-    ArgumentError ->
+    :erlang.binary_to_float(string)
+  catch
+    :error, :badarg ->
       token_error(token, skip)
   end
 

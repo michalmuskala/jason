@@ -1,12 +1,12 @@
 encode_jobs = %{
-  "Antidote"        => &Antidote.encode_to_iodata!/1,
-  "Antidote strict" => &Antidote.encode_to_iodata!(&1, maps: :strict),
-  "Poison"          => &Poison.encode_to_iodata!/1,
-  "JSX"             => &JSX.encode!/1,
-  "Tiny"            => &Tiny.encode!/1,
-  "jsone"           => &:jsone.encode/1,
-  "jiffy"           => &:jiffy.encode/1,
-  "JSON"            => &JSON.encode!/1,
+  "Jason"        => &Jason.encode_to_iodata!/1,
+  "Jason strict" => &Jason.encode_to_iodata!(&1, maps: :strict),
+  "Poison"       => &Poison.encode_to_iodata!/1,
+  "JSX"          => &JSX.encode!/1,
+  "Tiny"         => &Tiny.encode!/1,
+  "jsone"        => &:jsone.encode/1,
+  "jiffy"        => &:jiffy.encode/1,
+  "JSON"         => &JSON.encode!/1,
 }
 
 encode_inputs = [
@@ -33,8 +33,8 @@ end
 
 Benchee.run(encode_jobs,
   parallel: 4,
-  # warmup: 5,
-  # time: 30,
+  warmup: 5,
+  time: 30,
   inputs: for name <- encode_inputs, into: %{} do
             name
             |> read_data.()

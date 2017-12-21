@@ -1,4 +1,4 @@
-defmodule Antidote do
+defmodule Jason do
   @moduledoc """
   A blazing fast JSON parser and generator in pure Elixir.
   """
@@ -11,6 +11,8 @@ defmodule Antidote do
   @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
 
   @type decode_opt :: {:keys, keys}
+
+  alias Jason.{Encode, Decoder, ParseError, EncodeError}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -38,10 +40,10 @@ defmodule Antidote do
   Since the atoms are not garbage collected, this can pose a DoS attack vector when used
   on user-controlled data.
   """
-  @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, Antidote.ParseError.t()}
+  @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, ParseError.t()}
   def decode(input, opts \\ []) do
     input = IO.iodata_to_binary(input)
-    Antidote.Parser.parse(input, format_decode_opts(opts))
+    Decoder.parse(input, format_decode_opts(opts))
   end
 
   @doc """
@@ -52,7 +54,7 @@ defmodule Antidote do
   """
   @spec decode!(iodata, [decode_opt]) :: term | no_return
   def decode!(input, opts \\ []) do
-    case Antidote.Parser.parse(input, format_decode_opts(opts)) do
+    case Decoder.parse(input, format_decode_opts(opts)) do
       {:ok, result} -> result
       {:error, error} -> raise error
     end
@@ -61,7 +63,7 @@ defmodule Antidote do
   @doc """
   Generates JSON corresponding to `input`.
 
-  The generation is controlled by the `Antidote.Encoder` protocol,
+  The generation is controlled by the `Jason.Encoder` protocol,
   please refer to the module to read more on how to define the protocol
   for custom data types.
 
@@ -84,9 +86,9 @@ defmodule Antidote do
         rejected, since both keys would be encoded to the string `"foo"`.
       * `:naive` (default) - does not perform the check.
   """
-  @spec encode(term, [encode_opt]) :: {:ok, String.t()} | {:error, Antidote.EncodeError.t()}
+  @spec encode(term, [encode_opt]) :: {:ok, String.t()} | {:error, EncodeError.t()}
   def encode(input, opts \\ []) do
-    case Antidote.Encode.encode(input, format_encode_opts(opts)) do
+    case Encode.encode(input, format_encode_opts(opts)) do
       {:ok, result} -> {:ok, IO.iodata_to_binary(result)}
       {:error, error} -> {:error, error}
     end
@@ -100,7 +102,7 @@ defmodule Antidote do
   """
   @spec encode!(term, [encode_opt]) :: String.t() | no_return
   def encode!(input, opts \\ []) do
-    case Antidote.Encode.encode(input, format_encode_opts(opts)) do
+    case Encode.encode(input, format_encode_opts(opts)) do
       {:ok, result} -> IO.iodata_to_binary(result)
       {:error, error} -> raise error
     end
@@ -115,9 +117,9 @@ defmodule Antidote do
   writes and avoid allocating a continuous buffer for the whole
   resulting string, lowering memory use and increasing performance.
   """
-  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, Antidote.EncodeError.t()}
+  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, Jason.EncodeError.t()}
   def encode_to_iodata(input, opts \\ []) do
-    Antidote.Encode.encode(input, format_encode_opts(opts))
+    Encode.encode(input, format_encode_opts(opts))
   end
 
   @doc """
@@ -128,7 +130,7 @@ defmodule Antidote do
   """
   @spec encode_to_iodata!(term, [encode_opt]) :: iodata | no_return
   def encode_to_iodata!(input, opts \\ []) do
-    case Antidote.Encode.encode(input, format_encode_opts(opts)) do
+    case Encode.encode(input, format_encode_opts(opts)) do
       {:ok, result} -> result
       {:error, error} -> raise error
     end

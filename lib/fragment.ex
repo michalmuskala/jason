@@ -1,4 +1,4 @@
-defmodule Antidote.Fragment do
+defmodule Jason.Fragment do
   defstruct [:encode]
 
   def new(iodata) when is_list(iodata) or is_binary(iodata) do

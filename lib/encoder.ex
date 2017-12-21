@@ -1,4 +1,4 @@
-defprotocol Antidote.Encoder do
+defprotocol Jason.Encoder do
   @moduledoc """
   Protocol controlling how a value is encoded to JSON.
 
@@ -21,71 +21,71 @@ defprotocol Antidote.Encoder do
         defstruct [:foo, :bar, :baz]
       end
 
-  If we were to call `@derive Antidote.Encoder` just before `defstruct`,
+  If we were to call `@derive Jason.Encoder` just before `defstruct`,
   an implementaion similar to the follwing implementation would be generated:
 
-      defimpl Antidote.Encoder, for: Test do
-        alias Antidote.Encode
+      defimpl Jason.Encoder, for: Test do
+        alias Jason.Encode
 
         def encode(value, opts) do
-          Antidote.Encode.map(Map.take(value, [:foo, :bar, :baz]), opts)
+          Jason.Encode.map(Map.take(value, [:foo, :bar, :baz]), opts)
         end
       end
 
-  If we called `@derive {Antidote.Encoder, only: [:foo]}`, an implementation
+  If we called `@derive {Jason.Encoder, only: [:foo]}`, an implementation
   similar to the following implementation would be genrated:
 
-      defimpl Antidote.Encoder, for: Test do
+      defimpl Jason.Encoder, for: Test do
         def encode(value, opts) do
-          Antidote.Encode.map(Map.take(value, [:foo]), opts)
+          Jason.Encode.map(Map.take(value, [:foo]), opts)
         end
       end
 
-  If we called `@derive {Antidote.Encoder, except: [:foo]}`, an implementation
+  If we called `@derive {Jason.Encoder, except: [:foo]}`, an implementation
   similar to the following implementation would be generated:
 
-      defimpl Antidote.Encoder, for: Test do
+      defimpl Jason.Encoder, for: Test do
         def encode(value, opts) do
-          Antidote.Encode.map(Map.take(value, [:bar, :baz]), opts)
+          Jason.Encode.map(Map.take(value, [:bar, :baz]), opts)
         end
       end
 
   The actually generated implementations are more efficient computing some data
-  during compilation similar to the macros from the `Antidote.Helpers` module.
+  during compilation similar to the macros from the `Jason.Helpers` module.
 
   ## Explicit implementation
 
   If you wish to implement the protocol fully yourself, it is advised to
-  use functions from the `Antidote.Encode` module to do the actuall iodata
+  use functions from the `Jason.Encode` module to do the actuall iodata
   generation - they are highly optimized and verified to always produce
   valid JSON.
   """
 
   @type t :: term
-  @type opts :: Antidote.Encode.opts()
+  @type opts :: Jason.Encode.opts()
 
   @doc """
   Encodes `value` to JSON.
 
   The argument `opts` is opaque - it can be passed to various functions in
-  `Antidote.Encode` (or to the protocol function itself) for encoding values to JSON.
+  `Jason.Encode` (or to the protocol function itself) for encoding values to JSON.
   """
   @spec encode(t, opts) :: iodata
   def encode(value, opts)
 end
 
-defimpl Antidote.Encoder, for: Any do
+defimpl Jason.Encoder, for: Any do
   defmacro __deriving__(module, struct, opts) do
     fields = fields_to_encode(struct, opts)
     kv = Enum.map(fields, &{&1, Macro.var(&1, __MODULE__)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
     encode_args = [escape, encode_map]
-    kv_iodata = Antidote.Codegen.build_kv_iodata(kv, encode_args)
+    kv_iodata = Jason.Codegen.build_kv_iodata(kv, encode_args)
 
     quote do
-      defimpl Antidote.Encoder, for: unquote(module) do
-        require Antidote.Helpers
+      defimpl Jason.Encoder, for: unquote(module) do
+        require Jason.Helpers
 
         def encode(%{unquote_splicing(kv)}, {unquote(escape), unquote(encode_map)}) do
           unquote(kv_iodata)
@@ -99,26 +99,26 @@ defimpl Antidote.Encoder, for: Any do
       protocol: @protocol,
       value: struct,
       description: """
-      Antidote.Encoder protocol must always be explicitly implemented.
+      Jason.Encoder protocol must always be explicitly implemented.
 
       If you own the struct, you can derive the implementation specifying \
       which fields should be encoded to JSON:
 
-          @derive {Antidote.Encoder, only: [....]}
+          @derive {Jason.Encoder, only: [....]}
           defstruct ...
 
       It is also possible to encode all fields, although this should be \
       used carefully to avoid accidentally leaking private information \
       when new fields are added:
 
-          @derive Antidote.Encoder
+          @derive Jason.Encoder
           defstruct ...
 
       Finally, if you don't own the struct you want to encode to JSON, \
       you may use Protocol.derive/3 placed outside of any module:
 
-          Protocol.derive(Antidote.Encoder, NameOfTheStruct, only: [...])
-          Protocol.derive(Antidote.ENcoder, NameOfTheStruct)
+          Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
+          Protocol.derive(Jason.ENcoder, NameOfTheStruct)
     """
   end
 
@@ -126,7 +126,7 @@ defimpl Antidote.Encoder, for: Any do
     raise Protocol.UndefinedError,
       protocol: @protocol,
       value: value,
-      description: "Antidote.Encoder protocol must always be explicitly implemented"
+      description: "Jason.Encoder protocol must always be explicitly implemented"
   end
 
   defp fields_to_encode(struct, opts) do
@@ -144,42 +144,42 @@ defimpl Antidote.Encoder, for: Any do
 end
 
 # The following implementations are formality - they are already covered
-# by the main encoding mechanism in Antidote.Encode, but exist mostly for
+# by the main encoding mechanism in Jason.Encode, but exist mostly for
 # documentation purposes and if anybody had the idea to call the protocol directly.
 
-defimpl Antidote.Encoder, for: Atom do
+defimpl Jason.Encoder, for: Atom do
   def encode(atom, opts) do
-    Antidote.Encode.atom(atom, opts)
+    Jason.Encode.atom(atom, opts)
   end
 end
 
-defimpl Antidote.Encoder, for: Integer do
+defimpl Jason.Encoder, for: Integer do
   def encode(integer, _opts) do
-    Antidote.Encode.integer(integer)
+    Jason.Encode.integer(integer)
   end
 end
 
-defimpl Antidote.Encoder, for: Float do
+defimpl Jason.Encoder, for: Float do
   def encode(float, _opts) do
-    Antidote.Encode.float(float)
+    Jason.Encode.float(float)
   end
 end
 
-defimpl Antidote.Encoder, for: List do
+defimpl Jason.Encoder, for: List do
   def encode(list, opts) do
-    Antidote.Encode.list(list, opts)
+    Jason.Encode.list(list, opts)
   end
 end
 
-defimpl Antidote.Encoder, for: Map do
+defimpl Jason.Encoder, for: Map do
   def encode(map, opts) do
-    Antidote.Encode.map(map, opts)
+    Jason.Encode.map(map, opts)
   end
 end
 
-defimpl Antidote.Encoder, for: BitString do
+defimpl Jason.Encoder, for: BitString do
   def encode(binary, opts) when is_binary(binary) do
-    Antidote.Encode.string(binary, opts)
+    Jason.Encode.string(binary, opts)
   end
 
   def encode(bitstring, _opts) do
@@ -190,13 +190,13 @@ defimpl Antidote.Encoder, for: BitString do
   end
 end
 
-defimpl Antidote.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
+defimpl Jason.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
   def encode(value, _opts) do
     [?\", @for.to_iso8601(value), ?\"]
   end
 end
 
-defimpl Antidote.Encoder, for: Decimal do
+defimpl Jason.Encoder, for: Decimal do
   def encode(value, _opts) do
     # silence the xref warning
     decimal = Decimal
@@ -204,7 +204,7 @@ defimpl Antidote.Encoder, for: Decimal do
   end
 end
 
-defimpl Antidote.Encoder, for: Antidote.Fragment do
+defimpl Jason.Encoder, for: Jason.Fragment do
   def encode(%{encode: encode}, opts) do
     encode.(opts)
   end

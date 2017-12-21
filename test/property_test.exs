@@ -1,4 +1,4 @@
-defmodule Antidote.PropertyTest do
+defmodule Jason.PropertyTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
 
@@ -61,8 +61,8 @@ defmodule Antidote.PropertyTest do
     end
   end
 
-  defp decode(data, opts \\ []), do: Antidote.decode!(data, opts)
-  defp encode(data, opts \\ []), do: Antidote.encode!(data, opts)
+  defp decode(data, opts \\ []), do: Jason.decode!(data, opts)
+  defp encode(data, opts \\ []), do: Jason.encode!(data, opts)
 
   defp json(keys) do
     simple = one_of([integer(), float(), string(:printable), boolean(), nil])

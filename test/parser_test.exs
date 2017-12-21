@@ -1,7 +1,7 @@
-defmodule Antidote.ParserTest do
+defmodule Jason.ParserTest do
   use ExUnit.Case, async: true
 
-  alias Antidote.ParseError
+  alias Jason.DecodeError
 
   test "numbers" do
     assert_fail_with "-", "unexpected end of input at position 1"
@@ -133,11 +133,11 @@ defmodule Antidote.ParserTest do
   end
 
   defp parse!(json, opts \\ []) do
-    Antidote.decode!(json, opts)
+    Jason.decode!(json, opts)
   end
 
   defp assert_fail_with(string, error) do
-    assert_raise ParseError, error, fn ->
+    assert_raise DecodeError, error, fn ->
       parse!(string)
     end
   end

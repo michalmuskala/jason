@@ -1,9 +1,9 @@
-defmodule Antidote.Mixfile do
+defmodule Jason.Mixfile do
   use Mix.Project
 
   def project do
     [
-      app: :antidote,
+      app: :jason,
       version: "0.1.0",
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,

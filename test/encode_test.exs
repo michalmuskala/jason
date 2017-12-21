@@ -1,5 +1,7 @@
-defmodule Antidote.EncoderTest do
+defmodule Jason.EncoderTest do
   use ExUnit.Case, async: true
+
+  alias Jason.{EncodeError, Encoder}
 
   test "atom" do
     assert to_json(nil) == "null"
@@ -45,11 +47,11 @@ defmodule Antidote.EncoderTest do
     # assert to_json(%{'foo' => :bar}) == ~s({"foo":"bar"})
 
     multi_key_map = %{"foo" => "foo1", :foo => "foo2"}
-    assert_raise Antidote.EncodeError, "duplicate key: foo", fn ->
-      to_json(multi_key_map)
+    assert_raise EncodeError, "duplicate key: foo", fn ->
+      to_json(multi_key_map, maps: :strict)
     end
 
-    assert to_json(multi_key_map, maps: :naive) == ~s({"foo":"foo2","foo":"foo1"})
+    assert to_json(multi_key_map) == ~s({"foo":"foo2","foo":"foo1"})
   end
 
   test "list" do
@@ -85,17 +87,17 @@ defmodule Antidote.EncoderTest do
   end
 
   defmodule Derived do
-    @derive Antidote.Encoder
+    @derive Encoder
     defstruct name: ""
   end
 
   defmodule DerivedUsingOnly do
-    @derive {Antidote.Encoder, only: [:name]}
+    @derive {Encoder, only: [:name]}
     defstruct name: "", size: 0
   end
 
   defmodule DerivedUsingExcept do
-    @derive {Antidote.Encoder, except: [:name]}
+    @derive {Encoder, except: [:name]}
     defstruct name: "", size: 0
   end
 
@@ -105,8 +107,8 @@ defmodule Antidote.EncoderTest do
 
   test "@derive" do
     derived = %Derived{name: "derived"}
-    assert Antidote.Encoder.impl_for!(derived) == Antidote.Encoder.Antidote.EncoderTest.Derived
-    assert Antidote.decode!(to_json(derived)) == %{"name" => "derived"}
+    assert Encoder.impl_for!(derived) == Encoder.Jason.EncoderTest.Derived
+    assert Jason.decode!(to_json(derived)) == %{"name" => "derived"}
 
     non_derived = %NonDerived{name: "non-derived"}
     assert_raise Protocol.UndefinedError, fn ->
@@ -114,11 +116,10 @@ defmodule Antidote.EncoderTest do
     end
 
     derived_using_only = %DerivedUsingOnly{name: "derived using :only", size: 10}
-    assert Antidote.decode!(to_json(derived_using_only)) == %{"name" => "derived using :only"}
+    assert to_json(derived_using_only) == ~s({"name":"derived using :only"})
 
     derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
-    assert Antidote.decode!(to_json(derived_using_except)) == %{"size" => 10}
-
+    assert to_json(derived_using_except) == ~s({"size":10})
   end
 
   test "EncodeError" do
@@ -126,20 +127,16 @@ defmodule Antidote.EncoderTest do
       to_json(self())
     end
 
-    assert_raise Antidote.EncodeError, "invalid byte 0x80 in <<128>>", fn ->
+    assert_raise EncodeError, "invalid byte 0x80 in <<128>>", fn ->
       assert to_json(<<0x80>>)
     end
 
-    assert_raise Antidote.EncodeError, fn ->
+    assert_raise EncodeError, fn ->
       assert to_json(<<?a, 208>>)
     end
   end
 
   defp to_json(value, opts \\ []) do
-    opts = Enum.into(opts, %{maps: :strict, escape: :json})
-    case Antidote.Encode.encode(value, opts) do
-      {:ok, result} -> IO.iodata_to_binary(result)
-      {:error, err} -> raise err
-    end
+    Jason.encode!(value, opts)
   end
 end

@@ -1,18 +1,18 @@
-defmodule Antidote.Helpers do
+defmodule Jason.Helpers do
   @moduledoc """
   Provides macro facilities for partial compile-time encoding of JSON.
   """
 
-  alias Antidote.Codegen
+  alias Jason.{Codegen, Fragment}
 
   @doc ~S"""
   Encodes a JSON map from a compile-time keyword.
 
   Encodes they key at compile time and strives to create as flat iodata
   structure as possible to achieve maximum efficiency. Does encoding
-  right at the call site, but returns an `%Antidote.Fragment{}` struct
+  right at the call site, but returns an `%Jason.Fragment{}` struct
   that needs to be passed to one of the "main" encoding functions -
-  for example `Antidote.encode/2` for final encoding into JSON - this
+  for example `Jason.encode/2` for final encoding into JSON - this
   makes it completely transparent for most uses.
 
   Only allows keys that do not require escaping in any of the supported
@@ -25,7 +25,7 @@ defmodule Antidote.Helpers do
   ## Example
 
       iex> fragment = json_map(foo: 1, bar: 2)
-      iex> Antidote.encode!(fragment)
+      iex> Jason.encode!(fragment)
       "{\"foo\":1,\"bar\":2}"
 
   """
@@ -36,7 +36,7 @@ defmodule Antidote.Helpers do
     kv_iodata = Codegen.build_kv_iodata(Macro.expand(kv, __CALLER__), encode_args)
 
     quote do
-      %Antidote.Fragment{
+      %Fragment{
         encode: fn {unquote(escape), unquote(encode_map)} ->
           unquote(kv_iodata)
         end
@@ -55,7 +55,7 @@ defmodule Antidote.Helpers do
 
       iex> map = %{a: 1, b: 2, c: 3}
       iex> fragment = json_map_take(map, [:c, :b])
-      iex> Antidote.encode!(fragment)
+      iex> Jason.encode!(fragment)
       "{\"c\":3,\"b\":2}"
 
   """
@@ -70,7 +70,7 @@ defmodule Antidote.Helpers do
     quote do
       case unquote(map) do
         %{unquote_splicing(kv)} ->
-          %Antidote.Fragment{
+          %Fragment{
             encode: fn {unquote(escape), unquote(encode_map)} ->
               unquote(kv_iodata)
             end

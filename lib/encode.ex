@@ -1,4 +1,4 @@
-defmodule Antidote.EncodeError do
+defmodule Jason.EncodeError do
   defexception [:message]
 
   def exception(message) when is_binary(message) do
@@ -12,14 +12,14 @@ defmodule Antidote.EncodeError do
   end
 end
 
-defmodule Antidote.Encode do
+defmodule Jason.Encode do
   @moduledoc """
   Utilities for encoding elixir values to JSON.
   """
 
   import Bitwise
 
-  alias Antidote.{Codegen, EncodeError}
+  alias Jason.{Codegen, EncodeError, Encoder, Fragment}
 
   @typep escape :: (String.t, String.t, integer, iodata -> iodata)
   @typep encode_map :: (map, escape, encode_map -> iodata)
@@ -33,8 +33,8 @@ defmodule Antidote.Encode do
     encode_map = encode_map_function(opts)
     try do
       {:ok, value(value, escape, encode_map)}
-    rescue
-      e in EncoderError ->
+    catch
+      %EncodeError{} = e ->
         {:error, e}
     end
   end
@@ -56,7 +56,7 @@ defmodule Antidote.Encode do
   end
 
   @doc """
-  Equivalent to calling the `Antidote.Encoder.encode/2` protocol function.
+  Equivalent to calling the `Jason.Encoder.encode/2` protocol function.
 
   Slightly more efficient for built-in types because of the internal dispatching.
   """
@@ -96,7 +96,7 @@ defmodule Antidote.Encode do
   end
 
   def value(value, escape, encode_map) do
-    Antidote.Encoder.encode(value, {escape, encode_map})
+    Encoder.encode(value, {escape, encode_map})
   end
 
   @compile {:inline, integer: 1, float: 1}
@@ -217,13 +217,13 @@ defmodule Antidote.Encode do
     [?\", decimal.to_string(value, :normal), ?\"]
   end
 
-  defp struct(value, escape, encode_map, Antidote.Fragment) do
+  defp struct(value, escape, encode_map, Fragment) do
     %{encode: encode} = value
     encode.({escape, encode_map})
   end
 
   defp struct(value, escape, encode_map, _module) do
-    Antidote.Encoder.encode(value, {escape, encode_map})
+    Encoder.encode(value, {escape, encode_map})
   end
 
   @doc false
@@ -618,6 +618,6 @@ defmodule Antidote.Encode do
 
   @compile {:inline, error: 1}
   defp error(error) do
-    raise EncodeError, error
+    throw EncodeError.exception(error)
   end
 end

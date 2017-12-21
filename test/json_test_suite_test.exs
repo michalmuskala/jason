@@ -1,5 +1,7 @@
-defmodule JsonTestSuite do
+defmodule Jason.JsonTestSuite do
   use ExUnit.Case, async: true
+
+  alias Jason.DecodeError
 
   # Implementation-dependent tests
   i_succeeds = [
@@ -46,31 +48,27 @@ defmodule JsonTestSuite do
     case Path.basename(path) do
       "y_" <> name ->
         test name do
-          parse!(File.read!(unquote(path)))
+          Jason.decode!(File.read!(unquote(path)))
         end
       "n_" <> name ->
         test name do
-          assert_raise Antidote.ParseError, ~r"unexpected", fn ->
-            parse!(File.read!(unquote(path)))
+          assert_raise DecodeError, ~r"unexpected", fn ->
+            Jason.decode!(File.read!(unquote(path)))
           end
         end
       "i_" <> name ->
         cond do
           name in i_fails ->
             test name do
-              assert_raise Antidote.ParseError, ~r"unexpected", fn ->
-                parse!(File.read!(unquote(path)))
+              assert_raise DecodeError, ~r"unexpected", fn ->
+                Jason.decode!(File.read!(unquote(path)))
               end
             end
           name in i_succeeds ->
             test name do
-              parse!(File.read!(unquote(path)))
+              Jason.decode!(File.read!(unquote(path)))
             end
         end
     end
-  end
-
-  defp parse!(json) do
-    Antidote.decode!(json)
   end
 end

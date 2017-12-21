@@ -1,26 +1,27 @@
-defmodule Antidote.HelpersTest do
+defmodule Jason.HelpersTest do
   use ExUnit.Case, async: true
 
-  import Antidote.Helpers
+  alias Jason.{Helpers, Fragment, EncodeError}
+  import Helpers
 
-  doctest Antidote.Helpers
+  doctest Helpers
 
   describe "json_map/2" do
     test "produces same output as regular encoding" do
-      assert %Antidote.Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
-      assert Antidote.encode!(helper) == Antidote.encode!(%{bar: 2, baz: 3, foo: 1})
+      assert %Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
+      assert Jason.encode!(helper) == Jason.encode!(%{bar: 2, baz: 3, foo: 1})
     end
 
     test "rejects keys with invalid characters" do
-      assert_eval_raise Antidote.EncodeError, """
+      assert_eval_raise EncodeError, """
       json_map("/foo": 1)
       """
 
-      assert_eval_raise Antidote.EncodeError, ~S"""
+      assert_eval_raise EncodeError, ~S"""
       json_map("\\foo": 1)
       """
 
-      assert_eval_raise Antidote.EncodeError, ~S"""
+      assert_eval_raise EncodeError, ~S"""
       json_map("\"foo": 1)
       """
     end
@@ -29,9 +30,9 @@ defmodule Antidote.HelpersTest do
   describe "json_map_take/3" do
     test "is hygienic" do
       map = %{escape: 1}
-      assert %Antidote.Fragment{} = helper = json_map_take(map, [:escape])
+      assert %Fragment{} = helper = json_map_take(map, [:escape])
       assert Keyword.keys(binding()) == [:helper, :map]
-      assert Antidote.encode!(helper) == Antidote.encode!(map)
+      assert Jason.encode!(helper) == Jason.encode!(map)
     end
 
     test "fails gracefully" do
