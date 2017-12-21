@@ -204,6 +204,7 @@ defmodule Antidote.Encode do
     struct(value, escape, encode_map, module)
   end
 
+  # TODO: benchmark the effect of inlining the to_iso8601 functions
   for module <- [Date, Time, NaiveDateTime, DateTime] do
     defp struct(value, _escape, _encode_map, unquote(module)) do
       [?\", unquote(module).to_iso8601(value), ?\"]

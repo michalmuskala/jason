@@ -2,9 +2,6 @@ defprotocol Antidote.Encoder do
   @moduledoc """
   Protocol controlling how a value is encoded to JSON.
 
-  The protocol implementation must return either iodata or
-  the `Antidote.Fragment` struct.
-
   ## Deriving
 
   The protocol allows leveraging the Elixir's `@derive` feature
@@ -53,8 +50,15 @@ defprotocol Antidote.Encoder do
         end
       end
 
-  The actually generated implementations are more efficient, and similar to the
-  macros from the `Antidote.Helpers` module.
+  The actually generated implementations are more efficient computing some data
+  during compilation similar to the macros from the `Antidote.Helpers` module.
+
+  ## Explicit implementation
+
+  If you wish to implement the protocol fully yourself, it is advised to
+  use functions from the `Antidote.Encode` module to do the actuall iodata
+  generation - they are highly optimized and verified to always produce
+  valid JSON.
   """
 
   @type t :: term
@@ -90,11 +94,39 @@ defimpl Antidote.Encoder, for: Any do
     end
   end
 
+  def encode(%_{} = struct, _opts) do
+    raise Protocol.UndefinedError,
+      protocol: @protocol,
+      value: struct,
+      description: """
+      Antidote.Encoder protocol must always be explicitly implemented.
+
+      If you own the struct, you can derive the implementation specifying \
+      which fields should be encoded to JSON:
+
+          @derive {Antidote.Encoder, only: [....]}
+          defstruct ...
+
+      It is also possible to encode all fields, although this should be \
+      used carefully to avoid accidentally leaking private information \
+      when new fields are added:
+
+          @derive Antidote.Encoder
+          defstruct ...
+
+      Finally, if you don't own the struct you want to encode to JSON, \
+      you may use Protocol.derive/3 placed outside of any module:
+
+          Protocol.derive(Antidote.Encoder, NameOfTheStruct, only: [...])
+          Protocol.derive(Antidote.ENcoder, NameOfTheStruct)
+    """
+  end
+
   def encode(value, _opts) do
     raise Protocol.UndefinedError,
       protocol: @protocol,
       value: value,
-      description: "an explicit protocol implementation is required."
+      description: "Antidote.Encoder protocol must always be explicitly implemented"
   end
 
   defp fields_to_encode(struct, opts) do
