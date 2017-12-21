@@ -4,6 +4,7 @@
   "benchee_json": {:hex, :benchee_json, "0.4.0", "59d3277829bd1dca8373cdb20b916cb435c2647be235d09963fc0959db908c36", [:mix], [{:benchee, "~> 0.10", [hex: :benchee, repo: "hexpm", optional: false]}, {:poison, ">= 1.4.0", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm"},
   "decimal": {:hex, :decimal, "1.4.1", "ad9e501edf7322f122f7fc151cce7c2a0c9ada96f2b0155b8a09a795c2029770", [:mix], [], "hexpm"},
   "deep_merge": {:hex, :deep_merge, "0.1.1", "c27866a7524a337b6a039eeb8dd4f17d458fd40fbbcb8c54661b71a22fffe846", [:mix], [], "hexpm"},
+  "dialyxir": {:hex, :dialyxir, "0.5.1", "b331b091720fd93e878137add264bac4f644e1ddae07a70bf7062c7862c4b952", [], [], "hexpm"},
   "elixir_make": {:hex, :elixir_make, "0.4.0", "992f38fabe705bb45821a728f20914c554b276838433349d4f2341f7a687cddf", [:mix], [], "hexpm"},
   "exjsx": {:hex, :exjsx, "4.0.0", "60548841e0212df401e38e63c0078ec57b33e7ea49b032c796ccad8cde794b5c", [:mix], [{:jsx, "~> 2.8.0", [hex: :jsx, repo: "hexpm", optional: false]}], "hexpm"},
   "jiffy": {:hex, :jiffy, "0.14.11", "919a87d491c5a6b5e3bbc27fafedc3a0761ca0b4c405394f121f582fd4e3f0e5", [:rebar3], [], "hexpm"},

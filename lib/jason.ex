@@ -12,7 +12,7 @@ defmodule Jason do
 
   @type decode_opt :: {:keys, keys}
 
-  alias Jason.{Encode, Decoder, ParseError, EncodeError}
+  alias Jason.{Encode, Decoder, DecodeError, EncodeError}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -40,7 +40,7 @@ defmodule Jason do
   Since the atoms are not garbage collected, this can pose a DoS attack vector when used
   on user-controlled data.
   """
-  @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, ParseError.t()}
+  @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, DecodeError.t()}
   def decode(input, opts \\ []) do
     input = IO.iodata_to_binary(input)
     Decoder.parse(input, format_decode_opts(opts))
@@ -117,7 +117,7 @@ defmodule Jason do
   writes and avoid allocating a continuous buffer for the whole
   resulting string, lowering memory use and increasing performance.
   """
-  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, Jason.EncodeError.t()}
+  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, EncodeError.t()}
   def encode_to_iodata(input, opts \\ []) do
     Encode.encode(input, format_encode_opts(opts))
   end

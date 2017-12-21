@@ -606,8 +606,8 @@ defmodule Jason.Decoder do
       token_error(token, skip)
   end
 
-  defp error(<<_rest::bits>>, original, skip, _stack, _key_decode, _string_decode) do
-    error(original, skip - 1)
+  defp error(<<_rest::bits>>, _original, skip, _stack, _key_decode, _string_decode) do
+    throw {:position, skip - 1}
   end
 
   defp empty_error(_original, skip) do
@@ -624,7 +624,7 @@ defmodule Jason.Decoder do
   end
 
   defp token_error(token, position, len) do
-    token_error(binary_part(token, position, len), position)
+    throw {:token, binary_part(token, position, len), position}
   end
 
   @compile {:inline, continue: 7}

@@ -1,6 +1,8 @@
 defmodule Jason.EncodeError do
   defexception [:message]
 
+  @type t :: %__MODULE__{message: String.t}
+
   def exception(message) when is_binary(message) do
     %__MODULE__{message: message}
   end
@@ -28,6 +30,7 @@ defmodule Jason.Encode do
   # @compile :native
 
   @doc false
+  @spec encode(any, map) :: {:ok, iodata} | {:error, EncodeError.t}
   def encode(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
