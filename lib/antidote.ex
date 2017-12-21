@@ -1,6 +1,6 @@
 defmodule Antidote do
   @moduledoc """
-  A blazing fast JSON parser and generator.
+  A blazing fast JSON parser and generator in pure Elixir.
   """
 
   @type escape :: :json | :unicode | :html | :javascript

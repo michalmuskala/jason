@@ -1,6 +1,6 @@
 # Antidote
 
-A blazing fast JSON parser and generator.
+A blazing fast JSON parser and generator in pure Elixir.
 
 The parser is usually twice as fast as `Poison` and only about 50% slower than
 `jiffy` - which is implemented in C with NIFs. On some data, `Antidote` can even
@@ -11,7 +11,7 @@ The generator is also usually twice as fast as `Poison` and uses less memory. It
 is about 1.3 to 2.0 times slower than `jiffy` depending on input.
 With HiPE `Antidote` is 1.3 to even 2.5 times faster than `jiffy`.
 
-Both parser and generator fully conform to RFC 7159 and ECMA 404 standard.
+Both parser and generator fully conform to RFC 8259 and ECMA 404 standard.
 The parser is tested using JSONTestSuite.
 
 ## Installation
@@ -44,7 +44,6 @@ Postgrex.Types.define(MyApp.PostgresTypes, [] ++ Ecto.Adapters.Postgres.extensio
 ```
 
 Then you can use the module, by passing it to `Postgrex.start_link`.
-
 ### Ecto
 
 To replicate fully the current behaviour of `Poison` when used in Ecto applications,
@@ -81,8 +80,8 @@ config :phoenix, :format_encoders,
   json: Antidote
 ```
 
-Unfortunately, it's not possible right now to configure the encoder and parser used in
-channels.
+A custom JSON encoder for Phoenix channels is unfortunately a bit more involved,
+thw whole procedure is described [in here](https://github.com/phoenixframework/phoenix/issues/2631#issuecomment-343971565).
 
 ### Absinthe
 
@@ -112,10 +111,47 @@ A HTML report of the benchmarks (after their execution) can be found in
 Antidote has a couple feature differences compared to Poison.
 
   * no support for pretty printing.
-  * no encoders for `MapSet`, `HashSet`, `Range` and `Stream`.
-  * no support for encoding any structs - explicit deriving is required.
+  * no support for decoding into data structures (the `as:` option).
+  * no built-in encoders for `MapSet`, `Range` and `Stream`.
+  * no support for encoding arbitrary structs - explicit implementation
+    of the `Antidote.Encoder` protocol is always required.
 
-The last two features are provided by the [`antidote_poison_compat` package](https://github.com/michalmuskala/antidote_poison_compat).
+If you require encoders for any of the unsupported collection types, I suggest
+adding the needed implementations directly to your project:
+
+```elixir
+defimpl Antidote.Encoder, for: [MapSet, Range, Stream] do
+  def encode(struct, opts) do
+    Antidote.Encode.list(Enum.to_list(struct), opts)
+  end
+end
+```
+
+If you need to encode some struct that does not implement the protocol,
+if you own the struct, you can derive the implementation specifying
+which fields should be encoded to JSON:
+
+```elixir
+@derive {Antidote.Encoder, only: [....]}
+defstruct # ...
+```
+
+It is also possible to encode all fields, although this should be
+used carefully to avoid accidentally leaking private information
+when new fields are added:
+
+```elixir
+@derive Antidote.Encoder
+defstruct # ...
+```
+
+Finally, if you don't own the struct you want to encode to JSON,
+you may use `Protocol.derive/3` placed outside of any module:
+
+```elixir
+Protocol.derive(Antidote.Encoder, NameOfTheStruct, only: [...])
+Protocol.derive(Antidote.ENcoder, NameOfTheStruct)
+```
 
 ## License
 
