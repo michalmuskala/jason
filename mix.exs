@@ -23,7 +23,6 @@ defmodule Jason.Mixfile do
   defp deps do
     [
       {:decimal, "~> 1.0", optional: true},
-      {:stream_data, "~> 0.4", only: :test},
       {:benchee, "~> 0.8", only: :dev},
       {:benchee_html, "~> 0.1", only: :dev},
       {:poison, "~> 3.0", only: :dev},
@@ -33,7 +32,15 @@ defmodule Jason.Mixfile do
       {:jiffy, "~> 0.14",  only: :dev},
       {:json, "~> 1.0", only: :dev},
       {:dialyxir, "~> 0.5", only: [:dev, :test], runtime: false}
-    ]
+    ] ++ maybe_stream_data()
+  end
+
+  defp maybe_stream_data() do
+    if Version.match?(System.version(), "~> 1.4") do
+      [{:stream_data, "~> 0.4", only: :test}]
+    else
+      []
+    end
   end
 
   defp aliases do
