@@ -11,23 +11,23 @@ The generator is also usually twice as fast as `Poison` and uses less memory. It
 is about 1.3 to 2.0 times slower than `jiffy` depending on input.
 With HiPE `Jason` is 1.3 to even 2.5 times faster than `jiffy`.
 
-Both parser and generator fully conform to RFC 8259 and ECMA 404 standard.
-The parser is tested using JSONTestSuite.
+Both parser and generator fully conform to
+[RFC 8259](https://tools.ietf.org/html/rfc8259) and
+[ECMA 404](http://www.ecma-international.org/publications/standards/Ecma-404.htm)
+standards. The parser is tested using [JSONTestSuite](https://github.com/nst/JSONTestSuite).
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `jason` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `jason` to your list of dependencies
+in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:jason, "~> 0.1.0"}]
+  [{:jason, "~> 1.0-rc"}]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/jason](https://hexdocs.pm/jason).
+Full documentation can be found at [https://hexdocs.pm/jason](https://hexdocs.pm/jason).
 
 ## Use with other libraries
 
@@ -99,7 +99,7 @@ forward "/api",
   init_opts: [schema: MyApp.Schema, json_codec: Jason]
 ```
 
-## Benchmars
+## Benchmarks
 
 Benchmarks against most popular Elixir & Erlang json libraries can be executed
 with `mix bench encode` and `mix bench decode`.
