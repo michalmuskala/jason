@@ -33,6 +33,8 @@ defmodule Jason.EncoderTest do
     assert to_json("</script>", escape: :html_safe) == ~s("<\\/script>")
     assert to_json(~s(<script>var s = "\u2028\u2029";</script>), escape: :html_safe) == ~s("<script>var s = \\\"\\u2028\\u2029\\\";<\\/script>")
     assert to_json("áéíóúàèìòùâêîôûãẽĩõũ") == ~s("áéíóúàèìòùâêîôûãẽĩõũ")
+    assert to_json("a\u2028a", escape: :javascript) == ~s("a\\u2028a")
+    assert to_json("a\u2028a", escape: :html_safe) == ~s("a\\u2028a")
 
     assert_raise Protocol.UndefinedError, fn ->
       to_json(<<0::1>>)

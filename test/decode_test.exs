@@ -1,4 +1,4 @@
-defmodule Jason.ParserTest do
+defmodule Jason.DecodeTest do
   use ExUnit.Case, async: true
 
   alias Jason.DecodeError

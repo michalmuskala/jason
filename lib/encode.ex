@@ -399,9 +399,10 @@ defmodule Jason.Encode do
     escape_javascript_chunk(rest, acc, original, skip, tail, len + 2)
   end
   Enum.map(surogate_escapes, fn {byte, escape} ->
-    defp escape_javascript(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
-      acc = [acc | unquote(escape)]
-      escape_javascript(rest, acc, original, skip + 3, tail)
+    defp escape_javascript_chunk(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail, len) do
+      part = binary_part(original, skip, len)
+      acc = [acc, part | unquote(escape)]
+      escape_javascript(rest, acc, original, skip + len + 3, tail)
     end
   end)
   defp escape_javascript_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
@@ -483,9 +484,10 @@ defmodule Jason.Encode do
     escape_html_chunk(rest, acc, original, skip, tail, len + 2)
   end
   Enum.map(surogate_escapes, fn {byte, escape} ->
-    defp escape_html(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail) do
-      acc = [acc | unquote(escape)]
-      escape_html(rest, acc, original, skip + 3, tail)
+    defp escape_html_chunk(<<unquote(byte)::utf8, rest::bits>>, acc, original, skip, tail, len) do
+      part = binary_part(original, skip, len)
+      acc = [acc, part | unquote(escape)]
+      escape_html(rest, acc, original, skip + len + 3, tail)
     end
   end)
   defp escape_html_chunk(<<char::utf8, rest::bits>>, acc, original, skip, tail, len)
