@@ -228,11 +228,11 @@ defmodule Jason.Encode do
 
   @doc false
   # This is used in the helpers and deriving implementation
-  def key(atom, escape) when is_atom(atom) do
-    string = Atom.to_string(atom)
+  def key(string, escape) when is_binary(string) do
     escape.(string, string, 0, [])
   end
-  def key(string, escape) when is_binary(string) do
+  def key(atom, escape) when is_atom(atom) do
+    string = Atom.to_string(atom)
     escape.(string, string, 0, [])
   end
   def key(other, escape) do
