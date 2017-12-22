@@ -3,13 +3,10 @@ defmodule Jason.EncodeError do
 
   @type t :: %__MODULE__{message: String.t}
 
-  def exception(message) when is_binary(message) do
-    %__MODULE__{message: message}
-  end
-  def exception({:duplicate_key, key}) do
+  def new({:duplicate_key, key}) do
     %__MODULE__{message: "duplicate key: #{key}"}
   end
-  def exception({:invalid_byte, byte, original}) do
+  def new({:invalid_byte, byte, original}) do
     %__MODULE__{message: "invalid byte #{inspect byte, base: :hex} in #{inspect original}"}
   end
 end
@@ -621,6 +618,6 @@ defmodule Jason.Encode do
 
   @compile {:inline, error: 1}
   defp error(error) do
-    throw EncodeError.exception(error)
+    throw EncodeError.new(error)
   end
 end
