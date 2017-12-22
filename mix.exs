@@ -36,7 +36,7 @@ defmodule Jason.Mixfile do
   end
 
   defp maybe_stream_data() do
-    if Version.match?(System.version(), "~> 1.4") do
+    if Version.match?(System.version(), "~> 1.5") do
       [{:stream_data, "~> 0.4", only: :test}]
     else
       []
