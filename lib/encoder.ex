@@ -64,6 +64,8 @@ defprotocol Jason.Encoder do
   @type t :: term
   @type opts :: Jason.Encode.opts()
 
+  @fallback_to_any true
+
   @doc """
   Encodes `value` to JSON.
 
@@ -119,7 +121,7 @@ defimpl Jason.Encoder, for: Any do
 
           Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
           Protocol.derive(Jason.ENcoder, NameOfTheStruct)
-    """
+      """
   end
 
   def encode(value, _opts) do
