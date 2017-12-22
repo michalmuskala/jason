@@ -2,14 +2,11 @@
 
 A blazing fast JSON parser and generator in pure Elixir.
 
-The parser is usually twice as fast as `Poison` and only about 50% slower than
-`jiffy` - which is implemented in C with NIFs. On some data, `Jason` can even
-outperform `jiffy`. With HiPE, `Jason` consistently outperforms `jiffy` on
-all inputs by 20-30%.
-
-The generator is also usually twice as fast as `Poison` and uses less memory. It
-is about 1.3 to 2.0 times slower than `jiffy` depending on input.
-With HiPE `Jason` is 1.3 to even 2.5 times faster than `jiffy`.
+The parser and generator are at least twice as fast as other Elixir/Erlang libraries
+(most notably `Poison`).
+The performance is comparable to `jiffy` - usually only twice as slow.
+When compiled with HiPE both parser and generator outperform even `jiffy` - usually
+by about 30%.
 
 Both parser and generator fully conform to
 [RFC 8259](https://tools.ietf.org/html/rfc8259) and
@@ -100,6 +97,12 @@ forward "/api",
 ```
 
 ## Benchmarks
+
+Detailed comparison with jiffy in various situations: https://gist.github.com/michalmuskala/29112611873bdb2bd7d87e3351aa639a
+
+Comparison with other Elixir and Erlang libraries: http://michal.muskala.eu/jason/decode.html and http://michal.muskala.eu/jason/encode.html
+
+### Running
 
 Benchmarks against most popular Elixir & Erlang json libraries can be executed
 with `mix bench encode` and `mix bench decode`.
