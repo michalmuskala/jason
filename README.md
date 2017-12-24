@@ -78,7 +78,7 @@ config :phoenix, :format_encoders,
 ```
 
 A custom JSON encoder for Phoenix channels is unfortunately a bit more involved,
-thw whole procedure is described [in here](https://github.com/phoenixframework/phoenix/issues/2631#issuecomment-343971565).
+the whole procedure is described [in here](https://github.com/phoenixframework/phoenix/issues/2631#issuecomment-343971565).
 
 ### Absinthe
 
