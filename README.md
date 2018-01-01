@@ -153,7 +153,7 @@ you may use `Protocol.derive/3` placed outside of any module:
 
 ```elixir
 Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
-Protocol.derive(Jason.ENcoder, NameOfTheStruct)
+Protocol.derive(Jason.Encoder, NameOfTheStruct)
 ```
 
 ## License
