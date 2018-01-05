@@ -132,6 +132,12 @@ defmodule Jason.DecodeTest do
     assert parse!(~s(  {  "foo"  :  "bar"  ,  "baz"  :  "quux"  }  )) == expected
   end
 
+  test "iodata" do
+    body = String.split(~s([1,2,3,4]), "")
+    expected = [1, 2, 3, 4]
+    assert parse!(body) == expected
+  end
+
   defp parse!(json, opts \\ []) do
     Jason.decode!(json, opts)
   end

@@ -56,7 +56,7 @@ defmodule Jason do
   """
   @spec decode!(iodata, [decode_opt]) :: term | no_return
   def decode!(input, opts \\ []) do
-    case Decoder.parse(input, format_decode_opts(opts)) do
+    case decode(input, opts) do
       {:ok, result} -> result
       {:error, error} -> raise error
     end
