@@ -10,7 +10,9 @@ defmodule Jason do
 
   @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
 
-  @type decode_opt :: {:keys, keys}
+  @type strings :: :reference | :copy
+
+  @type decode_opt :: {:keys, keys} | {:strings, strings}
 
   alias Jason.{Encode, Decoder, DecodeError, EncodeError}
 
