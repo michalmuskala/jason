@@ -4,7 +4,7 @@ decode_jobs = %{
   "JSX"      => &JSX.decode!(&1, [:strict]),
   "Tiny"     => &Tiny.decode!/1,
   "jsone"    => &:jsone.decode/1,
-  "jiffy"    => &:jiffy.decode(&1, [:return_maps]),
+  "jiffy"    => &:jiffy.decode(&1, [:return_maps, :use_nil]),
   "JSON"     => &JSON.decode!/1,
 }
 

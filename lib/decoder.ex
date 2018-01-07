@@ -327,6 +327,9 @@ defmodule Jason.Decoder do
     end
   end
 
+  # TODO: check if this approach would be faster:
+  # https://git.ninenines.eu/cowlib.git/tree/src/cow_ws.erl#n469
+  # http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
   defp string(data, original, skip, stack, key_decode, string_decode, len) do
     bytecase data, 128 do
       _ in '"', rest ->
