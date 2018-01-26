@@ -20,7 +20,7 @@ in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:jason, "~> 1.0-rc"}]
+  [{:jason, "~> 1.0"}]
 end
 ```
 
