@@ -49,9 +49,12 @@ defmodule Jason.Encode do
   defp escape_function(%{escape: escape}) do
     case escape do
       :json -> &escape_json/4
-      :unicode -> &escape_unicode/4
       :html_safe -> &escape_html/4
+      :unicode_safe -> &escape_unicode/4
+      :javascript_safe -> &escape_javascript/4
+      # Keep for compatibility with Poison
       :javascript -> &escape_javascript/4
+      :unicode -> &escape_unicode/4
     end
   end
 

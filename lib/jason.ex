@@ -3,7 +3,7 @@ defmodule Jason do
   A blazing fast JSON parser and generator in pure Elixir.
   """
 
-  @type escape :: :json | :unicode | :html | :javascript
+  @type escape :: :json | :unicode_safe | :html_safe | :javascript_safe
   @type maps :: :naive | :strict
 
   @type encode_opt :: {:escape, escape} | {:maps, maps}
