@@ -27,18 +27,22 @@ defmodule Jason.EncoderTest do
     assert to_json("\"") == ~s("\\"")
     assert to_json("\0") == ~s("\\u0000")
     assert to_json(<<31>>) == ~s("\\u001F")
-    assert to_json("☃a", escape: :unicode) == ~s("\\u2603a")
-    assert to_json("𝄞b", escape: :unicode) == ~s("\\uD834\\uDD1Eb")
-    assert to_json("\u2028\u2029abc", escape: :javascript) == ~s("\\u2028\\u2029abc")
+    assert to_json("☃a", escape: :unicode_safe) == ~s("\\u2603a")
+    assert to_json("𝄞b", escape: :unicode_safe) == ~s("\\uD834\\uDD1Eb")
+    assert to_json("\u2028\u2029abc", escape: :javascript_safe) == ~s("\\u2028\\u2029abc")
     assert to_json("</script>", escape: :html_safe) == ~s("<\\/script>")
     assert to_json(~s(<script>var s = "\u2028\u2029";</script>), escape: :html_safe) == ~s("<script>var s = \\\"\\u2028\\u2029\\\";<\\/script>")
     assert to_json("áéíóúàèìòùâêîôûãẽĩõũ") == ~s("áéíóúàèìòùâêîôûãẽĩõũ")
-    assert to_json("a\u2028a", escape: :javascript) == ~s("a\\u2028a")
+    assert to_json("a\u2028a", escape: :javascript_safe) == ~s("a\\u2028a")
     assert to_json("a\u2028a", escape: :html_safe) == ~s("a\\u2028a")
 
     assert_raise Protocol.UndefinedError, fn ->
       to_json(<<0::1>>)
     end
+
+    # Poison-compatible escape options
+    assert to_json("a\u2028a", escape: :javascript) == ~s("a\\u2028a")
+    assert to_json("☃a", escape: :unicode) == ~s("\\u2603a")
   end
 
   test "Map" do
@@ -86,6 +90,11 @@ defmodule Jason.EncoderTest do
                          microsecond: {50000, 3}, zone_abbr: "UTC", time_zone: "Etc/UTC",
                          std_offset: 0, utc_offset: 0}
     assert to_json(datetime) == ~s("2000-01-01T12:13:14.050Z")
+  end
+
+  test "Decimal" do
+    decimal = Decimal.new("1.0")
+    assert to_json(decimal) == ~s("1.0")
   end
 
   defmodule Derived do
