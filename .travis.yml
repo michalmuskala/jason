@@ -8,12 +8,18 @@ cache:
 
 elixir:
   - 1.4
-  - 1.5
+  - 1.6
 
 otp_release:
-  - 18.3
   - 19.3
   - 20.0
+
+matrix:
+  include:
+    - otp_release: 20.0
+      elixir: 1.5
+    - otp_release: 18.3
+      elixir: 1.4
 
 install:
   - mix local.hex --force
