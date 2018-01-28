@@ -8,7 +8,7 @@ defmodule Jason.Helpers do
   @doc ~S"""
   Encodes a JSON map from a compile-time keyword.
 
-  Encodes they key at compile time and strives to create as flat iodata
+  Encodes the keys at compile time and strives to create as flat iodata
   structure as possible to achieve maximum efficiency. Does encoding
   right at the call site, but returns an `%Jason.Fragment{}` struct
   that needs to be passed to one of the "main" encoding functions -
