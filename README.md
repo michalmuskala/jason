@@ -160,5 +160,5 @@ Protocol.derive(Jason.Encoder, NameOfTheStruct)
 
 Jason is released under the Apache 2.0 License - see the [LICENSE](LICENSE) file.
 
-Some elements of tests and benchmakrs have their origins in the
+Some elements of tests and benchmarks have their origins in the
 [Poison library](https://github.com/devinus/poison) and were initially licensed under [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/).
