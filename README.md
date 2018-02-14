@@ -51,7 +51,7 @@ config :ecto, json_library: Jason
 ```
 
 Additionally, when using PostgreSQL, you need to define a custom types module as described
-above, and configure your repo to use it (in either `conifg/config.exs` or `config/<env>.exs`):
+above, and configure your repo to use it (in either `config/config.exs` or `config/<env>.exs`):
 
 ```elixir
 config :my_app, MyApp.Repo, types: MyApp.PostgresTypes
@@ -71,7 +71,7 @@ plug Plug.Parsers,
   json_decoder: Jason
 ```
 
-Additionally, for Phoenix, you need to configure the "encoder" in `conifg/config.exs`:
+Additionally, for Phoenix, you need to configure the "encoder" in `config/config.exs`:
 
 ```elixir
 config :phoenix, :format_encoders,
