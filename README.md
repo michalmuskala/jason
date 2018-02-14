@@ -30,7 +30,7 @@ Full documentation can be found at [https://hexdocs.pm/jason](https://hexdocs.pm
 
 ### Postgrex
 
-You need to define a custom "types" module:
+You need to define a custom "types" module in an `.ex` file, somewhere in `lib`:
 
 ```elixir
 Postgrex.Types.define(MyApp.PostgresTypes, [], json: Jason)
@@ -44,14 +44,14 @@ Then you can use the module, by passing it to `Postgrex.start_link`.
 ### Ecto
 
 To replicate fully the current behaviour of `Poison` when used in Ecto applications,
-you need to configure `Jason` to be the default encoder:
+you need to configure `Jason` to be the default encoder in `config/config.exs`:
 
 ```elixir
 config :ecto, json_library: Jason
 ```
 
 Additionally, when using PostgreSQL, you need to define a custom types module as described
-above, and configure your repo to use it:
+above, and configure your repo to use it (in either `conifg/config.exs` or `config/<env>.exs`):
 
 ```elixir
 config :my_app, MyApp.Repo, types: MyApp.PostgresTypes
@@ -61,7 +61,8 @@ config :my_app, MyApp.Repo, types: MyApp.PostgresTypes
 
 First, you need to configure `Plug.Parsers` to use `Jason` for parsing JSON. You need to find,
 where you're plugging the `Plug.Parsers` plug (in case of Phoenix, it will be in the
-Endpoint module) and configure it, for example:
+Endpoint module) and configure it in your endpoint module (`lib/app_web/endpoint.ex`),
+for example:
 
 ```elixir
 plug Plug.Parsers,
@@ -70,7 +71,7 @@ plug Plug.Parsers,
   json_decoder: Jason
 ```
 
-Additionally, for Phoenix, you need to configure the "encoder"
+Additionally, for Phoenix, you need to configure the "encoder" in `conifg/config.exs`:
 
 ```elixir
 config :phoenix, :format_encoders,
