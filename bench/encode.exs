@@ -26,7 +26,7 @@ read_data = fn (name) ->
   |> String.downcase
   |> String.replace(~r/([^\w]|-|_)+/, "-")
   |> String.trim("-")
-  |> (&"data/json/#{&1}.json").()
+  |> (&"data/#{&1}.json").()
   |> Path.expand(__DIR__)
   |> File.read!
 end
