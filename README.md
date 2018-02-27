@@ -114,6 +114,9 @@ A HTML report of the benchmarks (after their execution) can be found in
 
 Jason has a couple feature differences compared to Poison.
 
+  * Jason follows the JSON spec more strctly, for example it does not allow
+    unescaped newline characters in JSON strings - e.g. `"\"\n\""` will
+    produce a decoding error.
   * no support for pretty printing.
   * no support for decoding into data structures (the `as:` option).
   * no built-in encoders for `MapSet`, `Range` and `Stream`.
