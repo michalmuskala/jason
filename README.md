@@ -106,7 +106,7 @@ Comparison with other Elixir and Erlang libraries: http://michal.muskala.eu/jaso
 ### Running
 
 Benchmarks against most popular Elixir & Erlang json libraries can be executed
-with `mix bench encode` and `mix bench decode`.
+with `mix bench.encode` and `mix bench.decode`.
 A HTML report of the benchmarks (after their execution) can be found in
 `bench/output/encode.html` and `bench/output/decode.html` respectively.
 

@@ -12,6 +12,7 @@ defmodule Jason.Mixfile do
       consolidate_protocols: Mix.env() != :test,
       deps: deps(),
       aliases: aliases(),
+      preferred_cli_env: ["bench.encode": :bench, "bench.decode": :bench, docs: :docs],
       dialyzer: dialyzer(),
       description: description(),
       package: package(),
@@ -28,16 +29,16 @@ defmodule Jason.Mixfile do
   defp deps() do
     [
       {:decimal, "~> 1.0", optional: true},
-      {:benchee, "~> 0.8", only: :dev},
-      {:benchee_html, "~> 0.1", only: :dev},
-      {:poison, "~> 3.0", only: :dev},
-      {:exjsx, "~> 4.0", only: :dev},
-      {:tiny, "~> 1.0", only: :dev},
-      {:jsone, "~> 1.4", only: :dev},
-      {:jiffy, "~> 0.14", only: :dev},
-      {:json, "~> 1.0", only: :dev},
+      {:benchee, "~> 0.8", only: :bench},
+      {:benchee_html, "~> 0.1", only: :bench},
+      {:poison, "~> 3.0", only: :bench},
+      {:exjsx, "~> 4.0", only: :bench},
+      {:tiny, "~> 1.0", only: :bench},
+      {:jsone, "~> 1.4", only: :bench},
+      {:jiffy, "~> 0.14", only: :bench},
+      {:json, "~> 1.0", only: :bench},
       {:dialyxir, "~> 0.5", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.18", only: :dev}
+      {:ex_doc, "~> 0.18", only: :docs}
     ] ++ maybe_stream_data()
   end
 
@@ -58,7 +59,6 @@ defmodule Jason.Mixfile do
 
   defp dialyzer() do
     [
-      plt_apps: [:kernel, :stdlib, :elixir, :decimal],
       ignore_warnings: "dialyzer.ignore"
     ]
   end
