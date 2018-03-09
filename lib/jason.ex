@@ -41,6 +41,14 @@ defmodule Jason do
   The `:atoms` option uses the `String.to_atom/1` call that can create atoms at runtime.
   Since the atoms are not garbage collected, this can pose a DoS attack vector when used
   on user-controlled data.
+
+  ## Examples
+
+      iex> Jason.decode("{}")
+      {:ok, %{}}
+
+      iex> Jason.decode("invalid")
+      {:error, %Jason.DecodeError{data: "invalid", position: 0, token: nil}}
   """
   @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, DecodeError.t()}
   def decode(input, opts \\ []) do
@@ -53,6 +61,15 @@ defmodule Jason do
 
   Similar to `decode/2` except it will unwrap the error tuple and raise
   in case of errors.
+
+  ## Examples
+
+      iex> Jason.decode!("{}")
+      %{}
+
+      iex> Jason.decode!("invalid")
+      ** (Jason.DecodeError) unexpected byte at position 0: 0x69 ('i')
+
   """
   @spec decode!(iodata, [decode_opt]) :: term | no_return
   def decode!(input, opts \\ []) do
@@ -87,6 +104,15 @@ defmodule Jason do
         if they appear. For example `%{:foo => 1, "foo" => 2}` would be
         rejected, since both keys would be encoded to the string `"foo"`.
       * `:naive` (default) - does not perform the check.
+
+  ## Examples
+
+      iex> Jason.encode(%{a: 1})
+      {:ok, ~S|{"a":1}|}
+
+      iex> Jason.encode("\\xFF")
+      {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
+
   """
   @spec encode(term, [encode_opt]) :: {:ok, String.t()} | {:error, EncodeError.t()}
   def encode(input, opts \\ []) do
@@ -101,6 +127,15 @@ defmodule Jason do
 
   Similar to `encode/1` except it will unwrap the error tuple and raise
   in case of errors.
+
+  ## Examples
+
+      iex> Jason.encode!(%{a: 1})
+      ~S|{"a":1}|
+
+      iex> Jason.encode!("\\xFF")
+      ** (Jason.EncodeError) invalid byte 0xFF in <<255>>
+
   """
   @spec encode!(term, [encode_opt]) :: String.t() | no_return
   def encode!(input, opts \\ []) do
@@ -118,6 +153,16 @@ defmodule Jason do
   over the socket. The Erlang runtime is able to leverage vectorised
   writes and avoid allocating a continuous buffer for the whole
   resulting string, lowering memory use and increasing performance.
+
+  ## Examples
+
+      iex> {:ok, iodata} = Jason.encode_to_iodata(%{a: 1})
+      iex> IO.iodata_to_binary(iodata)
+      ~S|{"a":1}|
+
+      iex> Jason.encode_to_iodata("\\xFF")
+      {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
+
   """
   @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, EncodeError.t()}
   def encode_to_iodata(input, opts \\ []) do
@@ -129,6 +174,16 @@ defmodule Jason do
 
   Similar to `encode_to_iodata/1` except it will unwrap the error tuple
   and raise in case of errors.
+
+  ## Examples
+
+      iex> iodata = Jason.encode_to_iodata!(%{a: 1})
+      iex> IO.iodata_to_binary(iodata)
+      ~S|{"a":1}|
+
+      iex> Jason.encode_to_iodata!("\\xFF")
+      ** (Jason.EncodeError) invalid byte 0xFF in <<255>>
+
   """
   @spec encode_to_iodata!(term, [encode_opt]) :: iodata | no_return
   def encode_to_iodata!(input, opts \\ []) do
