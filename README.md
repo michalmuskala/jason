@@ -24,6 +24,16 @@ def deps do
 end
 ```
 
+## Basic Usage
+
+``` elixir
+iex(1)> Jason.encode!(%{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"})
+"{\"age\":44,\"name\":\"Steve Irwin\",\"nationality\":\"Australian\"}"
+
+iex(2)> Jason.decode!("{\"age\":44,\"name\":\"Steve Irwin\",\"nationality\":\"Australian\"}")
+%{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"}
+```
+
 Full documentation can be found at [https://hexdocs.pm/jason](https://hexdocs.pm/jason).
 
 ## Use with other libraries
