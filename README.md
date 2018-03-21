@@ -30,7 +30,7 @@ end
 iex(1)> Jason.encode!(%{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"})
 "{\"age\":44,\"name\":\"Steve Irwin\",\"nationality\":\"Australian\"}"
 
-iex(2)> Jason.decode!("{\"age\":44,\"name\":\"Steve Irwin\",\"nationality\":\"Australian\"}")
+iex(2)> Jason.decode!(~s({"age":44,"name":"Steve Irwin","nationality":"Australian"}))
 %{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"}
 ```
 
