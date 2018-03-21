@@ -20,7 +20,7 @@ defmodule Jason.Encode do
 
   alias Jason.{Codegen, EncodeError, Encoder, Fragment}
 
-  @typep escape :: (String.t, String.t, integer, iodata -> iodata)
+  @typep escape :: (String.t, String.t, integer -> iodata)
   @typep encode_map :: (map, escape, encode_map -> iodata)
   @opaque opts :: {escape, encode_map}
 
