@@ -162,11 +162,11 @@ defmodule Jason.Formatter do
   defp pp_iodata(input, output_acc, depth, in_str, in_bs, empty, first, opts)
 
   defp pp_iodata("", output_acc, depth, in_str, in_bs, empty, first, opts) do
-    {:lists.reverse(output_acc), {depth, in_str, in_bs, empty, first, opts}}
+    {output_acc, {depth, in_str, in_bs, empty, first, opts}}
   end
 
   defp pp_iodata([], output_acc, depth, in_str, in_bs, empty, first, opts) do
-    {:lists.reverse(output_acc), {depth, in_str, in_bs, empty, first, opts}}
+    {output_acc, {depth, in_str, in_bs, empty, first, opts}}
   end
 
   defp pp_iodata(<<byte::size(8), rest::binary>>, output_acc, depth, in_str, in_bs, empty, first, opts) do
@@ -182,9 +182,9 @@ defmodule Jason.Formatter do
     {reversed_output, end_state} = Enum.reduce list, {[], starting_state}, fn (item, {output_acc, state}) ->
       {depth, in_str, in_bs, empty, first, opts} = state
       {item_output, new_state} = pp_iodata(item, [], depth, in_str, in_bs, empty, first, opts)
-      {[item_output | output_acc], new_state}
+      {[output_acc, item_output], new_state}
     end
-    {[:lists.reverse(reversed_output) | output_acc], end_state}
+    {[output_acc, reversed_output], end_state}
   end
 
 
@@ -204,26 +204,26 @@ defmodule Jason.Formatter do
   ## in string, following backslash
   defp pp_byte(byte, rest, output, depth, true=in_str, true=_in_bs, empty, first, opts) do
     in_bs = false
-    pp_iodata(rest, [byte | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, backslash
   defp pp_byte(byte, rest, output, depth, true=in_str, _in_bs, empty, first, opts)
   when byte in '\\' do
     in_bs = true
-    pp_iodata(rest, [byte | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, end quote
   defp pp_byte(byte, rest, output, depth, true=_in_str, in_bs, empty, first, opts)
   when byte in '"' do
     in_str = false
-    pp_iodata(rest, [byte | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, other character
   defp pp_byte(byte, rest, output, depth, true=in_str, in_bs, empty, first, opts) do
-    pp_iodata(rest, [byte | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, whitespace
@@ -244,7 +244,7 @@ defmodule Jason.Formatter do
     first = false
     empty = true
     depth = depth + 1
-    pp_iodata(rest, [out | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, end empty block
@@ -252,7 +252,7 @@ defmodule Jason.Formatter do
   when byte in '}]' do
     empty = false
     depth = depth - 1
-    pp_iodata(rest, [byte | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, end non-empty block
@@ -260,7 +260,7 @@ defmodule Jason.Formatter do
   when byte in '}]' do
     depth = depth - 1
     out = [opts[:line_separator], tab(opts, depth), byte]
-    pp_iodata(rest, [out | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, comma
@@ -268,14 +268,14 @@ defmodule Jason.Formatter do
   when byte in ',' do
     empty = false
     out = [byte, opts[:line_separator], tab(opts, depth)]
-    pp_iodata(rest, [out | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, colon
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
   when byte in ':' do
     out = [byte, opts[:after_colon]]
-    pp_iodata(rest, [out | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, other character (maybe start quote)
@@ -283,7 +283,7 @@ defmodule Jason.Formatter do
     out = if empty, do: [opts[:line_separator], tab(opts, depth), byte], else: byte
     in_str = byte in '"'
     empty = false
-    pp_iodata(rest, [out | output], depth, in_str, in_bs, empty, first, opts)
+    pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 end
 
