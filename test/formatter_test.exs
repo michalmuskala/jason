@@ -10,7 +10,7 @@ defmodule Jason.FormatterTest do
     "simple-object",
     "multiple-objects",
     "backslash-string",
-    "empty-nest",
+    "empty-nest"
   ]
 
   for name <- @test_cases do
@@ -65,4 +65,3 @@ defmodule Jason.FormatterTest do
     assert(pretty_print(input, indent: "\t") == output)
   end
 end
-
