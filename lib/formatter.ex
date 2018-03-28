@@ -10,12 +10,11 @@ defmodule Jason.Formatter do
   """
 
   @type opts :: [
-    {:indent, iodata} |
-    {:line_separator, iodata} |
-    {:record_separator, iodata} |
-    {:after_colon, iodata}
-  ]
-
+          {:indent, iodata}
+          | {:line_separator, iodata}
+          | {:record_separator, iodata}
+          | {:after_colon, iodata}
+        ]
 
   @doc ~S"""
   Returns a binary containing a pretty-printed representation of
@@ -51,9 +50,8 @@ defmodule Jason.Formatter do
   @spec pretty_print(iodata, opts) :: binary
   def pretty_print(iodata, opts \\ []) do
     pretty_print_to_iodata(iodata, opts)
-    |> IO.iodata_to_binary
+    |> IO.iodata_to_binary()
   end
-
 
   @doc ~S"""
   Returns an iolist containing a pretty-printed representation of
@@ -70,12 +68,10 @@ defmodule Jason.Formatter do
     first = true
     opts = normalize_opts(opts)
 
-    {output, _state} =
-      pp_iodata(iodata, [], depth, in_str, in_bs, empty, first, opts)
+    {output, _state} = pp_iodata(iodata, [], depth, in_str, in_bs, empty, first, opts)
 
     output
   end
-
 
   @doc ~S"""
   Returns a binary containing a minimized representation of
@@ -96,9 +92,8 @@ defmodule Jason.Formatter do
   @spec minimize(iodata, opts) :: binary
   def minimize(iodata, opts \\ []) do
     minimize_to_iodata(iodata, opts)
-    |> IO.iodata_to_binary
+    |> IO.iodata_to_binary()
   end
-
 
   @doc ~S"""
   Returns an iolist containing a minimized representation of
@@ -117,7 +112,6 @@ defmodule Jason.Formatter do
     )
   end
 
-
   ## Returns a copy of `opts` with defaults applied
   @spec normalize_opts(keyword) :: opts
   defp normalize_opts(opts) do
@@ -125,10 +119,9 @@ defmodule Jason.Formatter do
       indent: opts[:indent] || "  ",
       line_separator: opts[:line_separator] || "\n",
       record_separator: opts[:record_separator] || opts[:line_separator] || "\n",
-      after_colon: opts[:after_colon] || " ",
+      after_colon: opts[:after_colon] || " "
     ]
   end
-
 
   ## Returns an iolist containing `depth` instances of `opts[:indent]`
   @spec tab(opts, non_neg_integer, iolist) :: iolist
@@ -136,29 +129,40 @@ defmodule Jason.Formatter do
     if depth < 1 do
       output
     else
-      tab(opts, depth-1, [opts[:indent] | output])
+      tab(opts, depth - 1, [opts[:indent] | output])
     end
   end
 
-
   @typep pp_state :: {
-    non_neg_integer,  ## depth -- current nesting depth
-    boolean,          ## in_str -- is the current byte in a string?
-    boolean,          ## in_bs -- does the current byte follow a backslash in a string?
-    boolean,          ## empty -- is the current object or array empty?
-    boolean,          ## first -- is this the first object or array in the input?
-  }
+           ## depth -- current nesting depth
+           non_neg_integer,
+           ## in_str -- is the current byte in a string?
+           boolean,
+           ## in_bs -- does the current byte follow a backslash in a string?
+           boolean,
+           ## empty -- is the current object or array empty?
+           boolean,
+           ## first -- is this the first object or array in the input?
+           boolean
+         }
 
   @spec pp_iodata(
-    iodata,           ## input -- input data
-    iodata,           ## output_acc -- output iolist (built in reverse order)
-    non_neg_integer,  ## depth -- current nesting depth
-    boolean,          ## in_str -- is the current byte in a string?
-    boolean,          ## in_bs -- does the current byte follow a backslash in a string?
-    boolean,          ## empty -- is the current object or array empty?
-    boolean,          ## first -- is this the first object or array in the input?
-    opts
-  ) :: {iodata, pp_state}
+          ## input -- input data
+          iodata,
+          ## output_acc -- output iolist (built in reverse order)
+          iodata,
+          ## depth -- current nesting depth
+          non_neg_integer,
+          ## in_str -- is the current byte in a string?
+          boolean,
+          ## in_bs -- does the current byte follow a backslash in a string?
+          boolean,
+          ## empty -- is the current object or array empty?
+          boolean,
+          ## first -- is this the first object or array in the input?
+          boolean,
+          opts
+        ) :: {iodata, pp_state}
   defp pp_iodata(input, output_acc, depth, in_str, in_bs, empty, first, opts)
 
   defp pp_iodata("", output_acc, depth, in_str, in_bs, empty, first, opts) do
@@ -169,78 +173,100 @@ defmodule Jason.Formatter do
     {output_acc, {depth, in_str, in_bs, empty, first, opts}}
   end
 
-  defp pp_iodata(<<byte::size(8), rest::binary>>, output_acc, depth, in_str, in_bs, empty, first, opts) do
+  defp pp_iodata(
+         <<byte::size(8), rest::binary>>,
+         output_acc,
+         depth,
+         in_str,
+         in_bs,
+         empty,
+         first,
+         opts
+       ) do
     pp_byte(byte, rest, output_acc, depth, in_str, in_bs, empty, first, opts)
   end
 
-  defp pp_iodata(byte, output_acc, depth, in_str, in_bs, empty, first, opts) when is_integer(byte) do
+  defp pp_iodata(byte, output_acc, depth, in_str, in_bs, empty, first, opts)
+       when is_integer(byte) do
     pp_byte(byte, [], output_acc, depth, in_str, in_bs, empty, first, opts)
   end
 
   defp pp_iodata(list, output_acc, depth, in_str, in_bs, empty, first, opts) when is_list(list) do
     starting_state = {depth, in_str, in_bs, empty, first, opts}
-    {reversed_output, end_state} = Enum.reduce list, {[], starting_state}, fn (item, {output_acc, state}) ->
-      {depth, in_str, in_bs, empty, first, opts} = state
-      {item_output, new_state} = pp_iodata(item, [], depth, in_str, in_bs, empty, first, opts)
-      {[output_acc, item_output], new_state}
-    end
-    {[output_acc, reversed_output], end_state}
+
+    {list_output, end_state} =
+      Enum.reduce(list, {[], starting_state}, fn item, {output_acc, state} ->
+        {depth, in_str, in_bs, empty, first, opts} = state
+        {item_output, new_state} = pp_iodata(item, [], depth, in_str, in_bs, empty, first, opts)
+        {[output_acc, item_output], new_state}
+      end)
+
+    {[output_acc, list_output], end_state}
   end
 
-
   @spec pp_byte(
-    byte,             ## byte -- current byte
-    iodata,           ## rest -- rest of input data
-    iodata,           ## output -- output iolist (built in reverse order)
-    non_neg_integer,  ## depth -- current nesting depth
-    boolean,          ## in_str -- is the current byte in a string?
-    boolean,          ## in_bs -- does the current byte follow a backslash in a string?
-    boolean,          ## empty -- is the current object or array empty?
-    boolean,          ## first -- is this the first object or array in the input?
-    opts
-  ) :: {iodata, pp_state}
+          ## byte -- current byte
+          byte,
+          ## rest -- rest of input data
+          iodata,
+          ## output -- output iolist (built in reverse order)
+          iodata,
+          ## depth -- current nesting depth
+          non_neg_integer,
+          ## in_str -- is the current byte in a string?
+          boolean,
+          ## in_bs -- does the current byte follow a backslash in a string?
+          boolean,
+          ## empty -- is the current object or array empty?
+          boolean,
+          ## first -- is this the first object or array in the input?
+          boolean,
+          opts
+        ) :: {iodata, pp_state}
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
 
   ## in string, following backslash
-  defp pp_byte(byte, rest, output, depth, true=in_str, true=_in_bs, empty, first, opts) do
+  defp pp_byte(byte, rest, output, depth, true = in_str, true = _in_bs, empty, first, opts) do
     in_bs = false
     pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, backslash
-  defp pp_byte(byte, rest, output, depth, true=in_str, _in_bs, empty, first, opts)
-  when byte in '\\' do
+  defp pp_byte(byte, rest, output, depth, true = in_str, _in_bs, empty, first, opts)
+       when byte in '\\' do
     in_bs = true
     pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, end quote
-  defp pp_byte(byte, rest, output, depth, true=_in_str, in_bs, empty, first, opts)
-  when byte in '"' do
+  defp pp_byte(byte, rest, output, depth, true = _in_str, in_bs, empty, first, opts)
+       when byte in '"' do
     in_str = false
     pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## in string, other character
-  defp pp_byte(byte, rest, output, depth, true=in_str, in_bs, empty, first, opts) do
+  defp pp_byte(byte, rest, output, depth, true = in_str, in_bs, empty, first, opts) do
     pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, whitespace
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
-  when byte in ' \n\r\t' do
+       when byte in ' \n\r\t' do
     pp_iodata(rest, output, depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, start block
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
-  when byte in '{[' do
-    out = cond do
-      first -> byte
-      empty -> [opts[:line_separator], tab(opts, depth), byte]
-      depth == 0 -> [opts[:record_separator], byte]
-      true -> byte
-    end
+       when byte in '{[' do
+    out =
+      cond do
+        first -> byte
+        empty -> [opts[:line_separator], tab(opts, depth), byte]
+        depth == 0 -> [opts[:record_separator], byte]
+        true -> byte
+      end
+
     first = false
     empty = true
     depth = depth + 1
@@ -248,16 +274,16 @@ defmodule Jason.Formatter do
   end
 
   ## out of string, end empty block
-  defp pp_byte(byte, rest, output, depth, in_str, in_bs, true=_empty, first, opts)
-  when byte in '}]' do
+  defp pp_byte(byte, rest, output, depth, in_str, in_bs, true = _empty, first, opts)
+       when byte in '}]' do
     empty = false
     depth = depth - 1
     pp_iodata(rest, [output, byte], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, end non-empty block
-  defp pp_byte(byte, rest, output, depth, in_str, in_bs, false=empty, first, opts)
-  when byte in '}]' do
+  defp pp_byte(byte, rest, output, depth, in_str, in_bs, false = empty, first, opts)
+       when byte in '}]' do
     depth = depth - 1
     out = [opts[:line_separator], tab(opts, depth), byte]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
@@ -265,7 +291,7 @@ defmodule Jason.Formatter do
 
   ## out of string, comma
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, _empty, first, opts)
-  when byte in ',' do
+       when byte in ',' do
     empty = false
     out = [byte, opts[:line_separator], tab(opts, depth)]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
@@ -273,7 +299,7 @@ defmodule Jason.Formatter do
 
   ## out of string, colon
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
-  when byte in ':' do
+       when byte in ':' do
     out = [byte, opts[:after_colon]]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
@@ -286,4 +312,3 @@ defmodule Jason.Formatter do
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 end
-
