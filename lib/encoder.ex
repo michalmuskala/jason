@@ -56,7 +56,7 @@ defprotocol Jason.Encoder do
   ## Explicit implementation
 
   If you wish to implement the protocol fully yourself, it is advised to
-  use functions from the `Jason.Encode` module to do the actuall iodata
+  use functions from the `Jason.Encode` module to do the actual iodata
   generation - they are highly optimized and verified to always produce
   valid JSON.
   """
