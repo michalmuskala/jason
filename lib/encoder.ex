@@ -25,8 +25,6 @@ defprotocol Jason.Encoder do
   an implementaion similar to the follwing implementation would be generated:
 
       defimpl Jason.Encoder, for: Test do
-        alias Jason.Encode
-
         def encode(value, opts) do
           Jason.Encode.map(Map.take(value, [:foo, :bar, :baz]), opts)
         end
