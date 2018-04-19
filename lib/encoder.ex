@@ -25,8 +25,6 @@ defprotocol Jason.Encoder do
   an implementaion similar to the follwing implementation would be generated:
 
       defimpl Jason.Encoder, for: Test do
-        alias Jason.Encode
-
         def encode(value, opts) do
           Jason.Encode.map(Map.take(value, [:foo, :bar, :baz]), opts)
         end
@@ -56,7 +54,7 @@ defprotocol Jason.Encoder do
   ## Explicit implementation
 
   If you wish to implement the protocol fully yourself, it is advised to
-  use functions from the `Jason.Encode` module to do the actuall iodata
+  use functions from the `Jason.Encode` module to do the actual iodata
   generation - they are highly optimized and verified to always produce
   valid JSON.
   """
