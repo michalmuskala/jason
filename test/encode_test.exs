@@ -147,6 +147,10 @@ defmodule Jason.EncoderTest do
     end
   end
 
+  test "encode should not raise on Protocol.UndefinedError" do
+    assert {:error, %Protocol.UndefinedError{}} = Jason.encode(self())
+  end
+
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
   end

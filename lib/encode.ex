@@ -27,12 +27,15 @@ defmodule Jason.Encode do
   # @compile :native
 
   @doc false
-  @spec encode(any, map) :: {:ok, iodata} | {:error, EncodeError.t}
+  @spec encode(any, map) :: {:ok, iodata} | {:error, EncodeError.t} | {:error, Protocol.UndefinedError.t}
   def encode(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
     try do
       {:ok, value(value, escape, encode_map)}
+    rescue
+      e in Protocol.UndefinedError ->
+        {:error, e}
     catch
       %EncodeError{} = e ->
         {:error, e}
