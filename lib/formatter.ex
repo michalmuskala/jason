@@ -16,6 +16,9 @@ defmodule Jason.Formatter do
           | {:after_colon, iodata}
         ]
 
+  import Record
+  defrecordp :opts, [:indent, :line, :record, :colon]
+
   @doc ~S"""
   Returns a binary containing a pretty-printed representation of
   JSON-encoded `iodata`.
@@ -61,12 +64,14 @@ defmodule Jason.Formatter do
   """
   @spec pretty_print_to_iodata(iodata, opts) :: iodata
   def pretty_print_to_iodata(iodata, opts \\ []) do
+    opts = parse_opts(opts, opts(indent: "  ", line: "\n", record: nil, colon: " "))
+    opts = opts(opts, record: opts(opts, :record) || opts(opts, :line))
+
     depth = 0
     in_str = false
     in_bs = false
     empty = false
     first = true
-    opts = normalize_opts(opts)
 
     {output, _state} = pp_iodata(iodata, [], depth, in_str, in_bs, empty, first, opts)
 
@@ -103,35 +108,35 @@ defmodule Jason.Formatter do
   """
   @spec minimize_to_iodata(iodata, opts) :: iodata
   def minimize_to_iodata(iodata, opts) do
-    pretty_print_to_iodata(
-      iodata,
-      indent: "",
-      line_separator: "",
-      record_separator: opts[:record_separator] || "\n",
-      after_colon: ""
-    )
+    opts = parse_opts(opts, opts(indent: [], line: [], record: "\n", colon: []))
+
+    depth = 0
+    in_str = false
+    in_bs = false
+    empty = false
+    first = true
+
+    {output, _state} = pp_iodata(iodata, [], depth, in_str, in_bs, empty, first, opts)
+
+    output
   end
 
-  ## Returns a copy of `opts` with defaults applied
-  @spec normalize_opts(keyword) :: opts
-  defp normalize_opts(opts) do
-    [
-      indent: opts[:indent] || "  ",
-      line_separator: opts[:line_separator] || "\n",
-      record_separator: opts[:record_separator] || opts[:line_separator] || "\n",
-      after_colon: opts[:after_colon] || " "
-    ]
+  defp parse_opts(opts, defaults) do
+    Enum.reduce(opts, defaults, fn
+      {:indent, indent}, opts -> opts(opts, indent: indent)
+      {:line_separator, line}, opts -> opts(opts, line: line, record: opts(opts, :record) || line)
+      {:record_separator, record}, opts -> opts(opts, record: record)
+      {:after_colon, colon}, opts -> opts(opts, colon: colon)
+    end)
   end
 
   ## Returns an iolist containing `depth` instances of `opts[:indent]`
-  @spec tab(opts, non_neg_integer, iolist) :: iolist
-  defp tab(opts, depth, output \\ []) do
-    if depth < 1 do
-      output
-    else
-      tab(opts, depth - 1, [opts[:indent] | output])
-    end
+  for depth <- 1..16 do
+    defp tab("  ", unquote(depth)), do: unquote(String.duplicate("  ", depth))
   end
+
+  defp tab([], _), do: ""
+  defp tab(indent, depth), do: List.duplicate(indent, depth)
 
   @typep pp_state :: {
            ## depth -- current nesting depth
@@ -262,8 +267,8 @@ defmodule Jason.Formatter do
     out =
       cond do
         first -> byte
-        empty -> [opts[:line_separator], tab(opts, depth), byte]
-        depth == 0 -> [opts[:record_separator], byte]
+        empty -> [opts(opts, :line), tab(opts(opts, :indent), depth), byte]
+        depth == 0 -> [opts(opts, :record), byte]
         true -> byte
       end
 
@@ -285,7 +290,7 @@ defmodule Jason.Formatter do
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, false = empty, first, opts)
        when byte in '}]' do
     depth = depth - 1
-    out = [opts[:line_separator], tab(opts, depth), byte]
+    out = [opts(opts, :line), tab(opts(opts, :indent), depth), byte]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
@@ -293,20 +298,20 @@ defmodule Jason.Formatter do
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, _empty, first, opts)
        when byte in ',' do
     empty = false
-    out = [byte, opts[:line_separator], tab(opts, depth)]
+    out = [byte, opts(opts, :line), tab(opts(opts, :indent), depth)]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, colon
   defp pp_byte(byte, rest, output, depth, in_str, in_bs, empty, first, opts)
        when byte in ':' do
-    out = [byte, opts[:after_colon]]
+    out = [byte, opts(opts, :colon)]
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
   end
 
   ## out of string, other character (maybe start quote)
   defp pp_byte(byte, rest, output, depth, _in_str, in_bs, empty, first, opts) do
-    out = if empty, do: [opts[:line_separator], tab(opts, depth), byte], else: byte
+    out = if empty, do: [opts(opts, :line), tab(opts(opts, :indent), depth), byte], else: byte
     in_str = byte in '"'
     empty = false
     pp_iodata(rest, [output, out], depth, in_str, in_bs, empty, first, opts)
