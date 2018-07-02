@@ -37,7 +37,7 @@ if Code.ensure_loaded?(ExUnitProperties) do
       check all string <- string(:printable) do
         encoded = encode(string, escape: :unicode)
         for << <<byte>> <- encoded >> do
-          assert byte < 127
+          assert byte < 128
         end
         assert decode(encoded) == string
       end
