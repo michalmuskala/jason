@@ -127,11 +127,11 @@ Jason has a couple feature differences compared to Poison.
   * Jason follows the JSON spec more strictly, for example it does not allow
     unescaped newline characters in JSON strings - e.g. `"\"\n\""` will
     produce a decoding error.
-  * no support for pretty printing.
   * no support for decoding into data structures (the `as:` option).
   * no built-in encoders for `MapSet`, `Range` and `Stream`.
   * no support for encoding arbitrary structs - explicit implementation
     of the `Jason.Encoder` protocol is always required.
+  * different pretty-printing customisation options (default `pretty: true` works the same)
 
 If you require encoders for any of the unsupported collection types, I suggest
 adding the needed implementations directly to your project:
