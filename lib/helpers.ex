@@ -61,7 +61,7 @@ defmodule Jason.Helpers do
   """
   defmacro json_map_take(map, take) do
     take = Macro.expand(take, __CALLER__)
-    kv = Enum.map(take, &{&1, Macro.var(&1, Codegen)})
+    kv = Enum.map(take, &{&1, generated_var(&1, Codegen)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
     encode_args = [escape, encode_map]
@@ -81,5 +81,10 @@ defmodule Jason.Helpers do
                 "expected a map with keys: #{unquote(inspect(take))}, got: #{inspect(other)}"
       end
     end
+  end
+
+  # The same as Macro.var/2 except it sets generated: true
+  defp generated_var(name, context) do
+    {name, [generated: true], context}
   end
 end
