@@ -3,18 +3,18 @@ defmodule Jason do
   A blazing fast JSON parser and generator in pure Elixir.
   """
 
+  alias Jason.{Encode, Decoder, DecodeError, EncodeError, Formatter}
+
   @type escape :: :json | :unicode_safe | :html_safe | :javascript_safe
   @type maps :: :naive | :strict
 
-  @type encode_opt :: {:escape, escape} | {:maps, maps}
+  @type encode_opt :: {:escape, escape} | {:maps, maps} | {:pretty, true | Formatter.opts()}
 
   @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
 
   @type strings :: :reference | :copy
 
   @type decode_opt :: {:keys, keys} | {:strings, strings}
-
-  alias Jason.{Encode, Decoder, DecodeError, EncodeError}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -105,6 +105,11 @@ defmodule Jason do
         rejected, since both keys would be encoded to the string `"foo"`.
       * `:naive` (default) - does not perform the check.
 
+    * `:pretty` - controls pretty printing of the output. Possible values are:
+
+      * `true` to pretty print with default configuration
+      * a keyword of options as specified by `Jason.Formatter.pretty_print/2`.
+
   ## Examples
 
       iex> Jason.encode(%{a: 1})
@@ -117,7 +122,7 @@ defmodule Jason do
   @spec encode(term, [encode_opt]) ::
           {:ok, String.t()} | {:error, EncodeError.t() | Exception.t()}
   def encode(input, opts \\ []) do
-    case Encode.encode(input, format_encode_opts(opts)) do
+    case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> {:ok, IO.iodata_to_binary(result)}
       {:error, error} -> {:error, error}
     end
@@ -140,7 +145,7 @@ defmodule Jason do
   """
   @spec encode!(term, [encode_opt]) :: String.t() | no_return
   def encode!(input, opts \\ []) do
-    case Encode.encode(input, format_encode_opts(opts)) do
+    case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> IO.iodata_to_binary(result)
       {:error, error} -> raise error
     end
@@ -168,7 +173,7 @@ defmodule Jason do
   @spec encode_to_iodata(term, [encode_opt]) ::
           {:ok, iodata} | {:error, EncodeError.t() | Exception.t()}
   def encode_to_iodata(input, opts \\ []) do
-    Encode.encode(input, format_encode_opts(opts))
+    do_encode(input, format_encode_opts(opts))
   end
 
   @doc """
@@ -189,10 +194,28 @@ defmodule Jason do
   """
   @spec encode_to_iodata!(term, [encode_opt]) :: iodata | no_return
   def encode_to_iodata!(input, opts \\ []) do
-    case Encode.encode(input, format_encode_opts(opts)) do
+    case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> result
       {:error, error} -> raise error
     end
+  end
+
+  defp do_encode(input, %{pretty: true} = opts) do
+    case Encode.encode(input, opts) do
+      {:ok, encoded} -> {:ok, Formatter.pretty_print_to_iodata(encoded)}
+      other -> other
+    end
+  end
+
+  defp do_encode(input, %{pretty: pretty} = opts) do
+    case Encode.encode(input, opts) do
+      {:ok, encoded} -> {:ok, Formatter.pretty_print_to_iodata(encoded, pretty)}
+      other -> other
+    end
+  end
+
+  defp do_encode(input, opts) do
+    Encode.encode(input, opts)
   end
 
   defp format_encode_opts(opts) do
