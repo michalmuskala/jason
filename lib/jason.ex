@@ -114,7 +114,8 @@ defmodule Jason do
       {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
 
   """
-  @spec encode(term, [encode_opt]) :: {:ok, String.t()} | {:error, EncodeError.t()}
+  @spec encode(term, [encode_opt]) ::
+          {:ok, String.t()} | {:error, EncodeError.t() | Exception.t()}
   def encode(input, opts \\ []) do
     case Encode.encode(input, format_encode_opts(opts)) do
       {:ok, result} -> {:ok, IO.iodata_to_binary(result)}
@@ -164,7 +165,8 @@ defmodule Jason do
       {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
 
   """
-  @spec encode_to_iodata(term, [encode_opt]) :: {:ok, iodata} | {:error, EncodeError.t()}
+  @spec encode_to_iodata(term, [encode_opt]) ::
+          {:ok, iodata} | {:error, EncodeError.t() | Exception.t()}
   def encode_to_iodata(input, opts \\ []) do
     Encode.encode(input, format_encode_opts(opts))
   end
