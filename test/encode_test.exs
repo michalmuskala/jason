@@ -151,6 +151,10 @@ defmodule Jason.EncoderTest do
     assert {:error, %Protocol.UndefinedError{}} = Jason.encode(self())
   end
 
+  test "pretty: true" do
+    assert to_json(%{a: 3.14159, b: 1}, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
+  end
+
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
   end

@@ -33,6 +33,12 @@ if Code.ensure_loaded?(ExUnitProperties) do
       end
     end
 
+    property "pretty roundtrip" do
+      check all json <- json(string(:printable)) do
+        assert decode(encode(json, pretty: true)) == json
+      end
+    end
+
     property "unicode escaping" do
       check all string <- string(:printable) do
         encoded = encode(string, escape: :unicode)
