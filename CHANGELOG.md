@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 (02.07.2018)
+
+### Bug fixes
+
+* fix `Jason.Encode.escape` type ([a57b430](https://github.com/michalmuskala/jason/commit/a57b430))
+* multiple documentation improvements
+
 ## 1.0.0 (26.01.2018)
 
 No changes
