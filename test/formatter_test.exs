@@ -64,4 +64,38 @@ defmodule Jason.FormatterTest do
     output = ~s|{\n\t"a": {\n\t\t"b": [\n\t\t\ttrue,\n\t\t\tfalse\n\t\t]\n\t}\n}|
     assert(pretty_print(input, indent: "\t") == output)
   end
+
+  test "proper string escaping" do
+    input = ["\"abc\\\\", "\""]
+    output = ~S|"abc\\"|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\\\", ?"]
+    output = ~S|"abc\\"|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\\"", "\""]
+    output = ~S|"abc\""|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\\"", ?"]
+    output = ~S|"abc\""|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\", "\"\""]
+    output = ~S|"abc\""|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\", ?", ?"]
+    output = ~S|"abc\""|
+    assert(minimize(input) == output)
+
+    input = ["\"abc", "\\", ?", ?"]
+    output = ~S|"abc\""|
+    assert(minimize(input) == output)
+
+    input = ["\"abc\\", "\\", ?"]
+    output = ~S|"abc\\"|
+    assert(minimize(input) == output)
+  end
 end
