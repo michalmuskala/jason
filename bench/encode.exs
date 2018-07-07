@@ -7,7 +7,7 @@ encode_jobs = %{
   "jsone"          => &:jsone.encode/1,
   "jiffy"          => &:jiffy.encode/1,
   "JSON"           => &JSON.encode!/1,
-  "term_to_binary" => &:erlang.term_to_binary/1,
+  # "term_to_binary" => &:erlang.term_to_binary/1,
 }
 
 encode_inputs = [
@@ -33,13 +33,14 @@ end
 
 
 Benchee.run(encode_jobs,
-  parallel: 4,
+#  parallel: 4,
   warmup: 5,
   time: 30,
+  memory_time: 1,
   inputs: for name <- encode_inputs, into: %{} do
             name
             |> read_data.()
-            |> Poison.decode!
+            |> Jason.decode!()
             |> (&{name, &1}).()
           end,
   formatters: [

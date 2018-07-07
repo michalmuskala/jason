@@ -6,7 +6,7 @@ decode_jobs = %{
   "jsone"  => fn {json, _} -> :jsone.decode(json) end,
   "jiffy"  => fn {json, _} -> :jiffy.decode(json, [:return_maps, :use_nil]) end,
   "JSON"   => fn {json, _} -> JSON.decode!(json) end,
-  "binary_to_term/1" => fn {_, etf} -> :erlang.binary_to_term(etf) end,
+  # "binary_to_term/1" => fn {_, etf} -> :erlang.binary_to_term(etf) end,
 }
 
 decode_inputs = [
@@ -38,9 +38,10 @@ end
 inputs = for name <- decode_inputs, into: %{}, do: {name, read_data.(name)}
 
 Benchee.run(decode_jobs,
-  parallel: 4,
+#  parallel: 4,
   warmup: 5,
   time: 30,
+  memory_time: 1,
   inputs: inputs,
   formatters: [
     &Benchee.Formatters.HTML.output/1,

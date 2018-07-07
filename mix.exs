@@ -30,7 +30,7 @@ defmodule Jason.Mixfile do
     [
       {:decimal, "~> 1.0", optional: true},
       {:benchee, "~> 0.8", only: :bench},
-      {:benchee_html, "~> 0.1", only: :bench},
+      {:benchee_html, "~> 0.1", only: :bench, github: "michalmuskala/benchee_html"},
       {:poison, "~> 3.0", only: :bench},
       {:exjsx, "~> 4.0", only: :bench},
       {:tiny, "~> 1.0", only: :bench},
@@ -38,7 +38,7 @@ defmodule Jason.Mixfile do
       {:jiffy, "~> 0.14", only: :bench},
       {:json, "~> 1.0", only: :bench},
       {:dialyxir, "~> 0.5", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.18", only: :docs}
+      {:ex_doc, "~> 0.18", only: :docs},
     ] ++ maybe_stream_data()
   end
 
