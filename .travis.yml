@@ -4,8 +4,7 @@ cache:
   directories:
     - ~/.hex
     - ~/.mix
-    - deps
-    - _build/*/*.plt
+    - _build
 
 elixir:
   - 1.4
@@ -29,3 +28,8 @@ install:
 script:
   - mix test
   - MIX_ENV=test mix dialyzer --halt-exit-status
+
+# Leave only the .plt files in build
+before_cache:
+  - mix deps.clean --all --build
+  - mix clean --build
