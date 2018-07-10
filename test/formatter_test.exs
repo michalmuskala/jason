@@ -10,7 +10,8 @@ defmodule Jason.FormatterTest do
     "simple-object",
     "multiple-objects",
     "backslash-string",
-    "empty-nest"
+    "empty-nest",
+    "nested-maps"
   ]
 
   for name <- @test_cases do
@@ -97,5 +98,9 @@ defmodule Jason.FormatterTest do
     input = ["\"abc\\", "\\", ?"]
     output = ~S|"abc\\"|
     assert(minimize(input) == output)
+
+    input = ~s|["a\\\\"]|
+    output = ~s|[\n  "a\\\\"\n]|
+    assert(pretty_print(input) == output)
   end
 end
