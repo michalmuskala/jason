@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1. (10.07.2018)
+
+### Bug fixes
+
+* correctly handle escape sequences in strings when pretty printing
+  ([794bbe4](https://github.com/michalmuskala/jason/commit/794bbe4)).
+
 ## 1.1.0 (02.07.2018)
 
 ### Enhancements
