@@ -216,16 +216,9 @@ defmodule Jason.Formatter do
     {output_acc, &pp_string(&1, &2, in_bs, cont)}
   end
 
-  defp pp_string(<<byte, rest::binary>>, output_acc, true = _in_bs, cont) do
+  defp pp_string(binary, output_acc, true = _in_bs, cont) when is_binary(binary) do
+    <<byte, rest::binary>> = binary
     pp_string(rest, [output_acc, byte], false, cont)
-  end
-
-  defp pp_string(<<?", rest::binary>>, output_acc, false = _in_bs, cont) do
-    cont.(rest, [output_acc, ?"])
-  end
-
-  defp pp_string(<<?\\, rest::binary>>, output_acc, false = _in_bs, cont) do
-    pp_string(rest, [output_acc, ?\\], true, cont)
   end
 
   defp pp_string(binary, output_acc, false = _in_bs, cont) when is_binary(binary) do
