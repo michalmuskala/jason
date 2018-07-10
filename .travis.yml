@@ -5,6 +5,7 @@ cache:
     - ~/.hex
     - ~/.mix
     - deps
+    - _build/*/*.plt
 
 elixir:
   - 1.4
