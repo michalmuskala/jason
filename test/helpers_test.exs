@@ -10,6 +10,9 @@ defmodule Jason.HelpersTest do
     test "produces same output as regular encoding" do
       assert %Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
       assert Jason.encode!(helper) == Jason.encode!(%{bar: 2, baz: 3, foo: 1})
+
+      assert %Fragment{} = helper = json_map(bar: 2,  foo: {1, 2})
+      assert Jason.encode!(helper, tuples: :list) == Jason.encode!(%{bar: 2, foo: {1, 2}}, tuples: :list)
     end
 
     test "rejects keys with invalid characters" do

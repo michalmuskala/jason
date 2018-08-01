@@ -32,12 +32,13 @@ defmodule Jason.Helpers do
   defmacro json_map(kv) do
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
-    encode_args = [escape, encode_map]
+    encode_tuple = quote(do: encode_tuple)
+    encode_args = [escape, encode_map, encode_tuple]
     kv_iodata = Codegen.build_kv_iodata(Macro.expand(kv, __CALLER__), encode_args)
 
     quote do
       %Fragment{
-        encode: fn {unquote(escape), unquote(encode_map)} ->
+        encode: fn {unquote(escape), unquote(encode_map), unquote(encode_tuple)} ->
           unquote(kv_iodata)
         end
       }
@@ -64,14 +65,15 @@ defmodule Jason.Helpers do
     kv = Enum.map(take, &{&1, generated_var(&1, Codegen)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
-    encode_args = [escape, encode_map]
+    encode_tuple = quote(do: encode_tuple)
+    encode_args = [escape, encode_map, encode_tuple]
     kv_iodata = Codegen.build_kv_iodata(kv, encode_args)
 
     quote do
       case unquote(map) do
         %{unquote_splicing(kv)} ->
           %Fragment{
-            encode: fn {unquote(escape), unquote(encode_map)} ->
+            encode: fn {unquote(escape), unquote(encode_map), unquote(encode_tuple)} ->
               unquote(kv_iodata)
             end
           }

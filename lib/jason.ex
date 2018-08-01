@@ -6,15 +6,24 @@ defmodule Jason do
   alias Jason.{Encode, Decoder, DecodeError, EncodeError, Formatter}
 
   @type escape :: :json | :unicode_safe | :html_safe | :javascript_safe
+
   @type maps :: :naive | :strict
 
-  @type encode_opt :: {:escape, escape} | {:maps, maps} | {:pretty, true | Formatter.opts()}
+  @type tuples :: :list | :raise
+
+  @type encode_opt ::
+          {:escape, escape}
+          | {:maps, maps}
+          | {:tuples, tuples}
+          | {:pretty, true | Formatter.opts()}
 
   @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
 
   @type strings :: :reference | :copy
 
-  @type decode_opt :: {:keys, keys} | {:strings, strings}
+  @type tuples_decode :: :tuple | :none
+
+  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:tuples, tuples_decode}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -35,6 +44,12 @@ defmodule Jason do
       * `:copy` - always copies the strings. This option is especially useful when parts of the
         decoded data will be stored for a long time (in ets or some process) to avoid keeping
         the reference to the original data.
+
+    * `:tuples` - controls how tuples (encoded as lists) are decoded. Possible values are:
+
+      * `:tuple` - if tuple was encoded with `tuples: :list` option,
+         it would be decoded as tuple
+      * `:none` (default) - decodes list and metadata element "__tuple__" as it is
 
   ## Decoding keys to atoms
 
@@ -104,6 +119,13 @@ defmodule Jason do
         if they appear. For example `%{:foo => 1, "foo" => 2}` would be
         rejected, since both keys would be encoded to the string `"foo"`.
       * `:naive` (default) - does not perform the check.
+
+    * `:tuples` - controls how tuples are encoded. Possible values are:
+
+      * `:list` - encode tuples as list and adds metadata element "__tuple__",
+         which can be parsed with `Jason.parse/2` back into tuple.
+         Must be used with `tuples: :tuple` option in `Jason.decode/2`
+      * `:raise` (default) - raises `EncodeError` exception if tuple passed.
 
     * `:pretty` - controls pretty printing of the output. Possible values are:
 
@@ -219,10 +241,10 @@ defmodule Jason do
   end
 
   defp format_encode_opts(opts) do
-    Enum.into(opts, %{escape: :json, maps: :naive})
+    Enum.into(opts, %{escape: :json, maps: :naive, tuples: :raise})
   end
 
   defp format_decode_opts(opts) do
-    Enum.into(opts, %{keys: :strings, strings: :reference})
+    Enum.into(opts, %{keys: :strings, strings: :reference, tuples: :none})
   end
 end
