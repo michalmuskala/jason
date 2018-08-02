@@ -9,6 +9,12 @@ defmodule Jason.EncodeError do
   def new({:invalid_byte, byte, original}) do
     %__MODULE__{message: "invalid byte #{inspect byte, base: :hex} in #{inspect original}"}
   end
+  def new({:tuple_not_supported, tuple}) do
+    %__MODULE__{
+      message: "tuple not supported by default, value: #{inspect tuple}. " <>
+               "To encode tuple, use `tuples: list` option"
+    }
+  end
 end
 
 defmodule Jason.Encode do
@@ -21,8 +27,11 @@ defmodule Jason.Encode do
   alias Jason.{Codegen, EncodeError, Encoder, Fragment}
 
   @typep escape :: (String.t, String.t, integer -> iodata)
-  @typep encode_map :: (map, escape, encode_map -> iodata)
-  @opaque opts :: {escape, encode_map}
+  @typep encode_map :: (map, escape, encode_map, encode_tuple -> iodata)
+  @typep encode_tuple ::
+           (tuple, escape, encode_map, encode_tuple -> iodata)
+           | (tuple, escape, encode_map, encode_tuple -> no_return)
+  @opaque opts :: {escape, encode_map, encode_tuple}
 
   # @compile :native
 
@@ -31,8 +40,9 @@ defmodule Jason.Encode do
   def encode(value, opts) do
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
+    encode_tuple = encode_tuple_function(opts)
     try do
-      {:ok, value(value, escape, encode_map)}
+      {:ok, value(value, escape, encode_map, encode_tuple)}
     catch
       :throw, %EncodeError{} = e ->
         {:error, e}
@@ -43,8 +53,15 @@ defmodule Jason.Encode do
 
   defp encode_map_function(%{maps: maps}) do
     case maps do
-      :naive -> &map_naive/3
-      :strict -> &map_strict/3
+      :naive -> &map_naive/4
+      :strict -> &map_strict/4
+    end
+  end
+
+  defp encode_tuple_function(%{tuples: tuples}) do
+    case tuples do
+      :list -> &tuple_list/4
+      :raise -> &tuple_raise/4
     end
   end
 
@@ -66,48 +83,52 @@ defmodule Jason.Encode do
   Slightly more efficient for built-in types because of the internal dispatching.
   """
   @spec value(term, opts) :: iodata
-  def value(value, {escape, encode_map}) do
-    value(value, escape, encode_map)
+  def value(value, {escape, encode_map, encode_tuple}) do
+    value(value, escape, encode_map, encode_tuple)
   end
 
   @doc false
   # We use this directly in the helpers and deriving for extra speed
-  def value(value, escape, _encode_map) when is_atom(value) do
+  def value(value, escape, _encode_map, _encode_tuple) when is_atom(value) do
     encode_atom(value, escape)
   end
 
-  def value(value, escape, _encode_map) when is_binary(value) do
+  def value(value, escape, _encode_map, _encode_tuple) when is_binary(value) do
     encode_string(value, escape)
   end
 
-  def value(value, _escape, _encode_map) when is_integer(value) do
+  def value(value, _escape, _encode_map, _encode_tuple) when is_integer(value) do
     integer(value)
   end
 
-  def value(value, _escape, _encode_map) when is_float(value) do
+  def value(value, _escape, _encode_map, _encode_tuple) when is_float(value) do
     float(value)
   end
 
-  def value(value, escape, encode_map) when is_list(value) do
-    list(value, escape, encode_map)
+  def value(value, escape, encode_map, encode_tuple) when is_list(value) do
+    list(value, escape, encode_map, encode_tuple)
   end
 
-  def value(%{__struct__: module} = value, escape, encode_map) do
-    struct(value, escape, encode_map, module)
+  def value(%{__struct__: module} = value, escape, encode_map, encode_tuple) do
+    struct(value, escape, encode_map, encode_tuple, module)
   end
 
-  def value(value, escape, encode_map) when is_map(value) do
-    encode_map.(value, escape, encode_map)
+  def value(value, escape, encode_map, encode_tuple) when is_map(value) do
+    encode_map.(value, escape, encode_map, encode_tuple)
   end
 
-  def value(value, escape, encode_map) do
-    Encoder.encode(value, {escape, encode_map})
+  def value(value, escape, encode_map, encode_tuple) when is_tuple(value) do
+    encode_tuple.(value, escape, encode_map, encode_tuple)
+  end
+
+  def value(value, escape, encode_map, encode_tuple) do
+    Encoder.encode(value, {escape, encode_map, encode_tuple})
   end
 
   @compile {:inline, integer: 1, float: 1}
 
   @spec atom(atom, opts) :: iodata
-  def atom(atom, {escape, _encode_map}) do
+  def atom(atom, {escape, _encode_map, _encode_tuple}) do
     encode_atom(atom, escape)
   end
 
@@ -128,70 +149,70 @@ defmodule Jason.Encode do
   end
 
   @spec list(list, opts) :: iodata
-  def list(list, {escape, encode_map}) do
-    list(list, escape, encode_map)
+  def list(list, {escape, encode_map, encode_tuple}) do
+    list(list, escape, encode_map, encode_tuple)
   end
 
-  defp list([], _escape, _encode_map) do
+  defp list([], _escape, _encode_map, _encode_tuple) do
     "[]"
   end
 
-  defp list([head | tail], escape, encode_map) do
-    [?[, value(head, escape, encode_map)
-     | list_loop(tail, escape, encode_map)]
+  defp list([head | tail], escape, encode_map, encode_tuple) do
+    [?[, value(head, escape, encode_map, encode_tuple)
+     | list_loop(tail, escape, encode_map, encode_tuple)]
   end
 
-  defp list_loop([], _escape, _encode_map) do
+  defp list_loop([], _escape, _encode_map, _encode_tuple) do
     ']'
   end
 
-  defp list_loop([head | tail], escape, encode_map) do
-    [?,, value(head, escape, encode_map)
-     | list_loop(tail, escape, encode_map)]
+  defp list_loop([head | tail], escape, encode_map, encode_tuple) do
+    [?,, value(head, escape, encode_map, encode_tuple)
+     | list_loop(tail, escape, encode_map, encode_tuple)]
   end
 
   @spec map(map, opts) :: iodata
-  def map(value, {escape, encode_map}) do
-    encode_map.(value, escape, encode_map)
+  def map(value, {escape, encode_map, encode_tuple}) do
+    encode_map.(value, escape, encode_map, encode_tuple)
   end
 
-  defp map_naive(value, escape, encode_map) do
+  defp map_naive(value, escape, encode_map, encode_tuple) do
     case Map.to_list(value) do
       [] -> "{}"
       [{key, value} | tail] ->
         ["{\"", key(key, escape), "\":",
-         value(value, escape, encode_map)
-         | map_naive_loop(tail, escape, encode_map)]
+         value(value, escape, encode_map, encode_tuple)
+         | map_naive_loop(tail, escape, encode_map, encode_tuple)]
     end
   end
 
-  defp map_naive_loop([], _escape, _encode_map) do
+  defp map_naive_loop([], _escape, _encode_map, _encode_tuple) do
     '}'
   end
 
-  defp map_naive_loop([{key, value} | tail], escape, encode_map) do
+  defp map_naive_loop([{key, value} | tail], escape, encode_map, encode_tuple) do
     [",\"", key(key, escape), "\":",
-     value(value, escape, encode_map)
-     | map_naive_loop(tail, escape, encode_map)]
+     value(value, escape, encode_map, encode_tuple)
+     | map_naive_loop(tail, escape, encode_map, encode_tuple)]
   end
 
-  defp map_strict(value, escape, encode_map) do
+  defp map_strict(value, escape, encode_map, encode_tuple) do
     case Map.to_list(value) do
       [] -> "{}"
       [{key, value} | tail] ->
         key = IO.iodata_to_binary(key(key, escape))
         visited = %{key => []}
         ["{\"", key, "\":",
-         value(value, escape, encode_map)
-         | map_strict_loop(tail, escape, encode_map, visited)]
+         value(value, escape, encode_map, encode_tuple)
+         | map_strict_loop(tail, escape, encode_map, encode_tuple, visited)]
     end
   end
 
-  defp map_strict_loop([], _encode_map, _escape, _visited) do
+  defp map_strict_loop([], _escape, _encode_map, _encode_tuple, _visited) do
     '}'
   end
 
-  defp map_strict_loop([{key, value} | tail], escape, encode_map, visited) do
+  defp map_strict_loop([{key, value} | tail], escape, encode_map, encode_tuple, visited) do
     key = IO.iodata_to_binary(key(key, escape))
     case visited do
       %{^key => _} ->
@@ -199,36 +220,51 @@ defmodule Jason.Encode do
       _ ->
         visited = Map.put(visited, key, [])
         [",\"", key, "\":",
-         value(value, escape, encode_map)
-         | map_strict_loop(tail, escape, encode_map, visited)]
+         value(value, escape, encode_map, encode_tuple)
+         | map_strict_loop(tail, escape, encode_map, encode_tuple, visited)]
     end
   end
 
+  @spec tuple(tuple, opts) :: iodata
+  def tuple(value, {escape, encode_map, encode_tuple}) do
+    encode_tuple.(value, escape, encode_map, encode_tuple)
+  end
+
+  defp tuple_list(value, escape, encode_map, encode_tuple) do
+    tuple_to_list = ["__tuple__" | Tuple.to_list(value)]
+    list(tuple_to_list, escape, encode_map, encode_tuple)
+  end
+
+  defp tuple_raise(value, _escape, _encode_map, _encode_tuple) do
+    error({:tuple_not_supported, value})
+  end
+
+
   @spec struct(struct, opts) :: iodata
-  def struct(%module{} = value, {escape, encode_map}) do
-    struct(value, escape, encode_map, module)
+  def struct(%module{} = value, {escape, encode_map, encode_tuple}) do
+    struct(value, escape, encode_map, encode_tuple, module)
   end
 
   # TODO: benchmark the effect of inlining the to_iso8601 functions
   for module <- [Date, Time, NaiveDateTime, DateTime] do
-    defp struct(value, _escape, _encode_map, unquote(module)) do
+    defp struct(value, _escape, _encode_map, _encode_tuple, unquote(module)) do
       [?\", unquote(module).to_iso8601(value), ?\"]
     end
   end
 
-  defp struct(value, _escape, _encode_map, Decimal) do
+  defp struct(value, _escape, _encode_map, _encode_tuple, Decimal) do
     # silence the xref warning
     decimal = Decimal
     [?\", decimal.to_string(value, :normal), ?\"]
   end
 
-  defp struct(value, escape, encode_map, Fragment) do
+  defp struct(value, escape, encode_map, encode_tuple, Fragment) do
     %{encode: encode} = value
-    encode.({escape, encode_map})
+    encode.({escape, encode_map, encode_tuple})
   end
 
-  defp struct(value, escape, encode_map, _module) do
-    Encoder.encode(value, {escape, encode_map})
+  defp struct(value, escape, encode_map, encode_tuple, _module) do
+    Encoder.encode(value, {escape, encode_map, encode_tuple})
   end
 
   @doc false
@@ -246,7 +282,7 @@ defmodule Jason.Encode do
   end
 
   @spec string(String.t, opts) :: iodata
-  def string(string, {escape, _encode_map}) do
+  def string(string, {escape, _encode_map, _encode_tuple}) do
     encode_string(string, escape)
   end
 

@@ -80,14 +80,15 @@ defimpl Jason.Encoder, for: Any do
     kv = Enum.map(fields, &{&1, generated_var(&1, __MODULE__)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
-    encode_args = [escape, encode_map]
+    encode_tuple = quote(do: encode_tuple)
+    encode_args = [escape, encode_map, encode_tuple]
     kv_iodata = Jason.Codegen.build_kv_iodata(kv, encode_args)
 
     quote do
       defimpl Jason.Encoder, for: unquote(module) do
         require Jason.Helpers
 
-        def encode(%{unquote_splicing(kv)}, {unquote(escape), unquote(encode_map)}) do
+        def encode(%{unquote_splicing(kv)}, {unquote(escape), unquote(encode_map), unquote(encode_tuple)}) do
           unquote(kv_iodata)
         end
       end
@@ -173,6 +174,12 @@ end
 defimpl Jason.Encoder, for: List do
   def encode(list, opts) do
     Jason.Encode.list(list, opts)
+  end
+end
+
+defimpl Jason.Encoder, for: Tuple do
+  def encode(tuple, opts) do
+    Jason.Encode.tuple(tuple, opts)
   end
 end
 

@@ -117,6 +117,11 @@ defmodule Jason.DecodeTest do
     assert parse!("[1, 2, 3]") == [1, 2, 3]
     assert parse!(~s(["foo", "bar", "baz"])) == ["foo", "bar", "baz"]
     assert parse!(~s([{"foo": "bar"}])) == [%{"foo" => "bar"}]
+
+    assert parse!(~s(["__tuple__"]), tuples: :tuple) == {}
+    assert parse!(~s(["__tuple__",1,2,3]), tuples: :tuple) == {1, 2, 3}
+    assert parse!(~s(["__tuple__"])) == ["__tuple__"]
+    assert parse!(~s(["__tuple__",1,2,3])) == ["__tuple__", 1, 2, 3]
   end
 
   test "whitespace" do

@@ -21,6 +21,18 @@ if Code.ensure_loaded?(ExUnitProperties) do
       end
     end
 
+    property "tuple roundtrip" do
+      simple = one_of([integer(), float(), string(:printable), boolean(), nil])
+      json =
+        tree(simple, fn json ->
+          one_of([list_of(json), map_of(string(:printable), json), tuple({json, json})])
+        end)
+
+      check all tuple <- json do
+        assert decode(encode(tuple, tuples: :list), tuples: :tuple)  == tuple
+      end
+    end
+
     property "string-keyed objects roundrtip" do
       check all json <- json(string(:printable)) do
         assert decode(encode(json)) == json

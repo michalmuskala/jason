@@ -65,6 +65,16 @@ defmodule Jason.EncoderTest do
     assert to_json([1, 2, 3]) == "[1,2,3]"
   end
 
+  test "tuple" do
+    assert to_json({}, tuples: :list) == ~s(["__tuple__"])
+    assert to_json({1, 2, 3}, tuples: :list) == ~s(["__tuple__",1,2,3])
+
+    assert_raise EncodeError, "tuple not supported by default, value: {1, 2, 3}. " <>
+                              "To encode tuple, use `tuples: list` option", fn ->
+      to_json({1, 2, 3}, tuple: :raise)
+    end
+  end
+
   test "Time" do
     {:ok, time} = Time.new(12, 13, 14)
     assert to_json(time) == ~s("12:13:14")
