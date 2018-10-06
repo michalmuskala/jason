@@ -110,6 +110,12 @@ defmodule Jason do
       * `true` to pretty print with default configuration
       * a keyword of options as specified by `Jason.Formatter.pretty_print/2`.
 
+    * `:transform_key` - controls how keys in maps or structs are transformed
+
+      * `nil` to not transform the key
+      * a function from string to string which will be applied to the key when
+        encoding
+
   ## Examples
 
       iex> Jason.encode(%{a: 1})
@@ -117,6 +123,9 @@ defmodule Jason do
 
       iex> Jason.encode("\\xFF")
       {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
+
+      iex> Jason.encode(%{foo: "bar"}, transform_key: &String.upcase/1)
+      {:ok, ~S|{"FOO":"bar"}|}
 
   """
   @spec encode(term, [encode_opt]) ::

@@ -10,6 +10,8 @@ defprotocol Jason.Encoder do
 
     * `:only` - encodes only values of specified keys.
     * `:except` - encodes all struct fields except specified keys.
+    * `:transform_key` - transforms the keys of the struct by
+      applying the given function.
 
   By default all keys except the `:__struct__` key are encoded.
 
