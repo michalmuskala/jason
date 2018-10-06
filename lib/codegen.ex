@@ -42,10 +42,10 @@ defmodule Jason.Codegen do
     end
   end
 
-  def build_kv_iodata(kv, encode_args) do
+  def build_kv_iodata(kv, transform_key, encode_args) do
     elements =
       kv
-      |> Enum.map(&encode_pair(&1, encode_args))
+      |> Enum.map(&encode_pair(&1, transform_key, encode_args))
       |> Enum.intersperse(",")
 
     collapse_static(List.flatten(["{", elements] ++ '}'))
@@ -122,8 +122,8 @@ defmodule Jason.Codegen do
     |> :orddict.from_list()
   end
 
-  defp encode_pair({key, value}, encode_args) do
-    key = IO.iodata_to_binary(Encode.key(key, &escape_key/3))
+  defp encode_pair({key, value}, transform_key, encode_args) do
+    key = IO.iodata_to_binary(Encode.key(key, &escape_key/3, transform_key))
     key = "\"" <> key <> "\":"
     [key, quote(do: Encode.value(unquote(value), unquote_splicing(encode_args)))]
   end

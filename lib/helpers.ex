@@ -34,6 +34,7 @@ defmodule Jason.Helpers do
     encode_map = quote(do: encode_map)
     transform_key = quote(do: transform_key)
     encode_args = [escape, encode_map, transform_key]
+    kv_iodata = Codegen.build_kv_iodata(Macro.expand(kv, __CALLER__), nil, encode_args)
 
     quote do
       %Fragment{
@@ -66,6 +67,7 @@ defmodule Jason.Helpers do
     encode_map = quote(do: encode_map)
     transform_key = quote(do: transform_key)
     encode_args = [escape, encode_map, transform_key]
+    kv_iodata = Codegen.build_kv_iodata(kv, nil, encode_args)
 
     quote do
       case unquote(map) do

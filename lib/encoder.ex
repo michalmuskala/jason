@@ -82,6 +82,8 @@ defimpl Jason.Encoder, for: Any do
     encode_map = quote(do: encode_map)
     encode_transform_key = quote(do: transform_key)
     encode_args = [escape, encode_map, encode_transform_key]
+    transform_key = Keyword.get(opts, :transform_key)
+    kv_iodata = Jason.Codegen.build_kv_iodata(kv, transform_key, encode_args)
 
     quote do
       defimpl Jason.Encoder, for: unquote(module) do
