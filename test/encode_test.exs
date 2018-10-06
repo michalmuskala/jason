@@ -116,6 +116,11 @@ defmodule Jason.EncoderTest do
     defstruct name: ""
   end
 
+  defmodule DerivedUpcase do
+    @derive {Encoder, transform_key: &String.upcase/1}
+    defstruct name: ""
+  end
+
   test "@derive" do
     derived = %Derived{name: "derived"}
     assert Encoder.impl_for!(derived) == Encoder.Jason.EncoderTest.Derived
@@ -155,7 +160,24 @@ defmodule Jason.EncoderTest do
     assert to_json(%{a: 3.14159, b: 1}, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
   end
 
+  test "transform_key" do
+    assert to_json_upcase(%{}) == "{}"
+    assert to_json_upcase(%{"foo" => "bar"})  == ~s({"FOO":"bar"})
+    assert to_json_upcase(%{foo: :bar}) == ~s({"FOO":"bar"})
+    assert to_json_upcase(%{42 => :bar}) == ~s({"42":"bar"})
+    assert to_json_upcase(%{'foo' => :bar}) == ~s({"FOO":"bar"})
+
+    assert to_json_upcase(%{"foo" => "foo", :bar => "bar"}) == ~s({"BAR":"bar","FOO":"foo"})
+
+    derived = %DerivedUpcase{name: "derived"}
+    assert Jason.decode!(to_json(derived)) == %{"NAME" => "derived"}
+  end
+
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
+  end
+
+  defp to_json_upcase(value) do
+    to_json(value, transform_key: &String.upcase/1)
   end
 end

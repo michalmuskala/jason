@@ -219,7 +219,7 @@ defmodule Jason do
   end
 
   defp format_encode_opts(opts) do
-    Enum.into(opts, %{escape: :json, maps: :naive})
+    Enum.into(opts, %{escape: :json, maps: :naive, transform_key: nil})
   end
 
   defp format_decode_opts(opts) do

@@ -80,14 +80,17 @@ defimpl Jason.Encoder, for: Any do
     kv = Enum.map(fields, &{&1, generated_var(&1, __MODULE__)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
-    encode_args = [escape, encode_map]
-    kv_iodata = Jason.Codegen.build_kv_iodata(kv, encode_args)
+    encode_transform_key = quote(do: transform_key)
+    encode_args = [escape, encode_map, encode_transform_key]
 
     quote do
       defimpl Jason.Encoder, for: unquote(module) do
         require Jason.Helpers
 
-        def encode(%{unquote_splicing(kv)}, {unquote(escape), unquote(encode_map)}) do
+        def encode(%{unquote_splicing(kv)}, {unquote(escape), unquote(encode_map), unquote(encode_transform_key)}) do
+          if unquote(encode_transform_key) != nil do
+            IO.puts("Jason: Be aware that `transform_key` will have no effect on the struct keys.")
+          end
           unquote(kv_iodata)
         end
       end
