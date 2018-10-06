@@ -21,8 +21,8 @@ defmodule Jason.Encode do
   alias Jason.{Codegen, EncodeError, Encoder, Fragment}
 
   @typep escape :: (String.t, String.t, integer -> iodata)
-  @typep encode_map :: (map, escape, encode_map -> iodata)
   @typep transform_key :: (String.t -> String.t)
+  @typep encode_map :: (map, escape, encode_map, transform_key -> iodata)
   @opaque opts :: {escape, encode_map, transform_key}
 
   # @compile :native
@@ -109,7 +109,7 @@ defmodule Jason.Encode do
   @compile {:inline, integer: 1, float: 1}
 
   @spec atom(atom, opts) :: iodata
-  def atom(atom, {escape, _encode_map}) do
+  def atom(atom, {escape, _encode_map, _transform_key}) do
     encode_atom(atom, escape)
   end
 
