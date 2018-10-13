@@ -207,7 +207,7 @@ defmodule Jason do
     end
   end
 
-  defp do_encode(input, %{pretty: pretty} = opts) do
+  defp do_encode(input, %{pretty: pretty} = opts) when pretty !== false do
     case Encode.encode(input, opts) do
       {:ok, encoded} -> {:ok, Formatter.pretty_print_to_iodata(encoded, pretty)}
       other -> other

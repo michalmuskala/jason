@@ -155,6 +155,10 @@ defmodule Jason.EncoderTest do
     assert to_json(%{a: 3.14159, b: 1}, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
   end
 
+  test "pretty: false" do
+    assert to_json(%{a: 3.14159, b: 1}, pretty: false) == ~s|{"a":3.14159,"b":1}|
+  end
+
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
   end
