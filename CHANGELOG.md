@@ -1,6 +1,13 @@
 # Changelog
 
-## 1.1.1. (10.07.2018)
+## 1.1.2 (19.10.2018)
+
+### Bug fixes
+
+* correctly handle the `pretty: false` option
+  ([ba318c8](https://github.com/michalmuskala/jason/commit/ba318c8)).
+
+## 1.1.1 (10.07.2018)
 
 ### Bug fixes
 
