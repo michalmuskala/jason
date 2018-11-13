@@ -152,17 +152,29 @@ defmodule Jason.Encode do
 
   @spec keyword(keyword, opts) :: iodata
   def keyword(list, {escape, encode_map}) do
-    keyword(list, escape, encode_map)
+    encode_map.(list, escape, encode_map)
   end
 
-  defp keyword([], _escape, _encode_map) do
+  defp keyword_naive([], _escape, _encode_map) do
     "{}"
   end
 
-  defp keyword([{key, value} | tail], escape, encode_map) do
+  defp keyword_naive([{key, value} | tail], escape, encode_map) do
     ["{\"", key(key, escape), "\":",
-      value(value, escape, encode_map)
-      | map_naive_loop(tail, escape, encode_map)]
+     value(value, escape, encode_map)
+     | map_naive_loop(tail, escape, encode_map)]
+  end
+
+  defp keyword_strict([], _escape, _encode_map) do
+    "{}"
+  end
+
+  defp keyword_strict([{key, value} | tail], escape, encode_map) do
+    key = IO.iodata_to_binary(key(key, escape))
+    visited = %{key => []}
+    ["{\"", key, "\":",
+     value(value, escape, encode_map)
+     | map_strict_loop(tail, escape, encode_map, visited)]
   end
 
   @spec map(map, opts) :: iodata
@@ -170,6 +182,9 @@ defmodule Jason.Encode do
     encode_map.(value, escape, encode_map)
   end
 
+  defp map_naive(value, escape, encode_map) when is_list(value) do
+    keyword_naive(value, escape, encode_map)
+  end
   defp map_naive(value, escape, encode_map) do
     case Map.to_list(value) do
       [] -> "{}"
@@ -190,6 +205,9 @@ defmodule Jason.Encode do
      | map_naive_loop(tail, escape, encode_map)]
   end
 
+  defp map_strict(value, escape, encode_map) when is_list(value) do
+    keyword_strict(value, escape, encode_map)
+  end
   defp map_strict(value, escape, encode_map) do
     case Map.to_list(value) do
       [] -> "{}"
