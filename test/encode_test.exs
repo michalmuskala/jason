@@ -162,4 +162,31 @@ defmodule Jason.EncoderTest do
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
   end
+
+end
+
+defmodule KeywordTester do
+  defstruct [:baz, :foo, :quux]
+end
+
+defimpl Jason.Encoder, for: [KeywordTester] do
+  def encode(struct, opts) do
+    struct
+    |> Map.from_struct
+    |> Enum.map(&(&1))
+    |> Jason.Encode.keyword(opts)
+  end
+end
+
+defmodule Jason.KeywordTest do
+  use ExUnit.Case, async: true
+
+  test "using keyword list encoding" do
+    t = %KeywordTester{baz: :bar, foo: "bag", quux: 42}
+    assert to_json(t) == ~s({"baz":"bar","foo":"bag","quux":42})
+  end
+
+  defp to_json(value, opts \\ []) do
+    Jason.encode!(value, opts)
+  end
 end

@@ -150,6 +150,21 @@ defmodule Jason.Encode do
      | list_loop(tail, escape, encode_map)]
   end
 
+  @spec keyword(keyword, opts) :: iodata
+  def keyword(list, {escape, encode_map}) do
+    keyword(list, escape, encode_map)
+  end
+
+  defp keyword([], _escape, _encode_map) do
+    "{}"
+  end
+
+  defp keyword([{key, value} | tail], escape, encode_map) do
+    ["{\"", key(key, escape), "\":",
+      value(value, escape, encode_map)
+      | map_naive_loop(tail, escape, encode_map)]
+  end
+
   @spec map(map, opts) :: iodata
   def map(value, {escape, encode_map}) do
     encode_map.(value, escape, encode_map)
