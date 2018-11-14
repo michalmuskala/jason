@@ -133,6 +133,24 @@ defmodule Jason.EncoderTest do
     assert to_json(derived_using_except) == ~s({"size":10})
   end
 
+  defmodule KeywordTester do
+    defstruct [:baz, :foo, :quux]
+  end
+
+  defimpl Jason.Encoder, for: [KeywordTester] do
+    def encode(struct, opts) do
+      struct
+      |> Map.from_struct
+      |> Enum.map(&(&1))
+      |> Jason.Encode.keyword(opts)
+    end
+  end
+
+  test "using keyword list encoding" do
+    t = %KeywordTester{baz: :bar, foo: "bag", quux: 42}
+    assert to_json(t) == ~s({"baz":"bar","foo":"bag","quux":42})
+  end
+
   test "EncodeError" do
     assert_raise Protocol.UndefinedError, fn ->
       to_json(self())
@@ -162,4 +180,5 @@ defmodule Jason.EncoderTest do
   defp to_json(value, opts \\ []) do
     Jason.encode!(value, opts)
   end
+
 end
