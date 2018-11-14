@@ -155,44 +155,25 @@ defmodule Jason.Encode do
     encode_map.(list, escape, encode_map)
   end
 
-  defp keyword_naive([], _escape, _encode_map) do
-    "{}"
-  end
-
-  defp keyword_naive([{key, value} | tail], escape, encode_map) do
-    ["{\"", key(key, escape), "\":",
-     value(value, escape, encode_map)
-     | map_naive_loop(tail, escape, encode_map)]
-  end
-
-  defp keyword_strict([], _escape, _encode_map) do
-    "{}"
-  end
-
-  defp keyword_strict([{key, value} | tail], escape, encode_map) do
-    key = IO.iodata_to_binary(key(key, escape))
-    visited = %{key => []}
-    ["{\"", key, "\":",
-     value(value, escape, encode_map)
-     | map_strict_loop(tail, escape, encode_map, visited)]
-  end
-
   @spec map(map, opts) :: iodata
   def map(value, {escape, encode_map}) do
     encode_map.(value, escape, encode_map)
   end
 
-  defp map_naive(value, escape, encode_map) when is_list(value) do
-    keyword_naive(value, escape, encode_map)
+  defp map_naive([], _escape, _encode_map) do
+    "{}"
   end
+
+  defp map_naive([{key, value} | tail], escape, encode_map) do
+    ["{\"", key(key, escape), "\":",
+    value(value, escape, encode_map)
+    | map_naive_loop(tail, escape, encode_map)]
+  end
+
   defp map_naive(value, escape, encode_map) do
-    case Map.to_list(value) do
-      [] -> "{}"
-      [{key, value} | tail] ->
-        ["{\"", key(key, escape), "\":",
-         value(value, escape, encode_map)
-         | map_naive_loop(tail, escape, encode_map)]
-    end
+    value
+    |> Map.to_list
+    |> map_naive(escape, encode_map)
   end
 
   defp map_naive_loop([], _escape, _encode_map) do
@@ -205,19 +186,22 @@ defmodule Jason.Encode do
      | map_naive_loop(tail, escape, encode_map)]
   end
 
-  defp map_strict(value, escape, encode_map) when is_list(value) do
-    keyword_strict(value, escape, encode_map)
+  defp map_strict([], _escape, _encode_map) do
+    "{}"
   end
+
+  defp map_strict([{key, value} | tail], escape, encode_map) do
+    key = IO.iodata_to_binary(key(key, escape))
+    visited = %{key => []}
+    ["{\"", key, "\":",
+     value(value, escape, encode_map)
+     | map_strict_loop(tail, escape, encode_map, visited)]
+  end
+
   defp map_strict(value, escape, encode_map) do
-    case Map.to_list(value) do
-      [] -> "{}"
-      [{key, value} | tail] ->
-        key = IO.iodata_to_binary(key(key, escape))
-        visited = %{key => []}
-        ["{\"", key, "\":",
-         value(value, escape, encode_map)
-         | map_strict_loop(tail, escape, encode_map, visited)]
-    end
+    value
+    |> Map.to_list
+    |> map_strict(escape, encode_map)
   end
 
   defp map_strict_loop([], _encode_map, _escape, _visited) do
