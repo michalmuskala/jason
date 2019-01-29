@@ -53,10 +53,10 @@ Then you can use the module, by passing it to `Postgrex.start_link`.
 ### Ecto
 
 To replicate fully the current behaviour of `Poison` when used in Ecto applications,
-you need to configure `Jason` to be the default encoder in `config/config.exs`:
+you need to configure `Jason` to be the default encoder of the `postgrex` library, in `config/config.exs`:
 
 ```elixir
-config :ecto, json_library: Jason
+config :postgrex, :json_library, Jason
 ```
 
 Additionally, when using PostgreSQL, you need to define a custom types module as described
