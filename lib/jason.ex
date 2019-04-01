@@ -14,7 +14,9 @@ defmodule Jason do
 
   @type strings :: :reference | :copy
 
-  @type decode_opt :: {:keys, keys} | {:strings, strings}
+  @type decimals :: :none | :floats | :all
+
+  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:decimals, decimals}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -36,6 +38,14 @@ defmodule Jason do
         decoded data will be stored for a long time (in ets or some process) to avoid keeping
         the reference to the original data.
 
+    * `:decimals` - allows numbers to be decoded as `Decimal`. Possible values are:
+
+      * `:none` (default) - numbers are decoded as `float` or `integer` (depending on
+        presence or lack of decimal point),
+      * `:floats` - decimal values only will be presented as `Decimal` (i.e., "1.0", "1e1"
+        will be `float`; "1" will be `integer`),
+      * `:all` - any number will be decoded as `Decimal`.
+
   ## Decoding keys to atoms
 
   The `:atoms` option uses the `String.to_atom/1` call that can create atoms at runtime.
@@ -49,6 +59,10 @@ defmodule Jason do
 
       iex> Jason.decode("invalid")
       {:error, %Jason.DecodeError{data: "invalid", position: 0, token: nil}}
+
+      iex> {:ok, json} = Jason.decode(~s({"foo":1}), decimals: :all)
+      iex> json["foo"]
+      #Decimal<1>
   """
   @spec decode(iodata, [decode_opt]) :: {:ok, term} | {:error, DecodeError.t()}
   def decode(input, opts \\ []) do
@@ -223,6 +237,6 @@ defmodule Jason do
   end
 
   defp format_decode_opts(opts) do
-    Enum.into(opts, %{keys: :strings, strings: :reference})
+    Enum.into(opts, %{keys: :strings, strings: :reference, decimals: :none})
   end
 end

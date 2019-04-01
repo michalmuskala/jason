@@ -108,6 +108,44 @@ defmodule Jason.DecodeTest do
     assert parse!(~s({"FOO": "bar"}), keys: &String.downcase/1) == %{"foo" => "bar"}
   end
 
+  test "decimals mode tests" do
+    # decimals: :none
+    assert parse!("{}", decimals: :none) === %{}
+    assert parse!(~s({"foo": 1}), decimals: :none) === %{"foo" => 1}
+    assert parse!(~s({"foo": 1.0}), decimals: :none) === %{"foo" => 1.0}
+    assert parse!(~s({"foo": 1e1}), decimals: :none) === %{"foo" => 10.0}
+    assert parse!(~s({"foo": -1}), decimals: :none) === %{"foo" => -1}
+    assert parse!(~s({"foo": -1.0}), decimals: :none) === %{"foo" => -1.0}
+    assert parse!(~s({"foo": -1e1}), decimals: :none) === %{"foo" => -10.0}
+    assert parse!(~s({"foo": 1e-1}), decimals: :none) === %{"foo" => 0.1}
+    assert parse!(~s({"foo": 0.0}), decimals: :none) === %{"foo" => 0.0}
+    assert parse!(~s({"foo": -0}), decimals: :none) === %{"foo" => 0}
+
+    # decimals: :floats
+    assert parse!("{}", decimals: :floats) === %{}
+    assert parse!(~s({"foo": 1}), decimals: :floats) === %{"foo" => 1}
+    assert parse!(~s({"foo": 1.0}), decimals: :floats) === %{"foo" => Decimal.new("1.0")}
+    assert parse!(~s({"foo": 1e1}), decimals: :floats) === %{"foo" => Decimal.new("10")}
+    assert parse!(~s({"foo": -1}), decimals: :floats) === %{"foo" => -1}
+    assert parse!(~s({"foo": -1.0}), decimals: :floats) === %{"foo" => Decimal.new("-1.0")}
+    assert parse!(~s({"foo": -1e1}), decimals: :floats) === %{"foo" => Decimal.new("-10")}
+    assert parse!(~s({"foo": 1e-1}), decimals: :floats) === %{"foo" => Decimal.new("0.10")}
+    assert parse!(~s({"foo": 0.0}), decimals: :floats) === %{"foo" => Decimal.new("0.0")}
+    assert parse!(~s({"foo": -0}), decimals: :floats) === %{"foo" => 0}
+
+    # decimals: :all
+    assert parse!("{}", decimals: :all) === %{}
+    assert parse!(~s({"foo": 1}), decimals: :all) === %{"foo" => Decimal.new("1")}
+    assert parse!(~s({"foo": 1.0}), decimals: :all) === %{"foo" => Decimal.new("1.0")}
+    assert parse!(~s({"foo": 1e1}), decimals: :all) === %{"foo" => Decimal.new("10")}
+    assert parse!(~s({"foo": -1}), decimals: :all) === %{"foo" => Decimal.new("-1")}
+    assert parse!(~s({"foo": -1.0}), decimals: :all) === %{"foo" => Decimal.new("-1.0")}
+    assert parse!(~s({"foo": -1e1}), decimals: :all) === %{"foo" => Decimal.new("-10")}
+    assert parse!(~s({"foo": 1e-1}), decimals: :all) === %{"foo" => Decimal.new("0.10")}
+    assert parse!(~s({"foo": 0.0}), decimals: :all) === %{"foo" => Decimal.new("0.0")}
+    assert parse!(~s({"foo": -0}), decimals: :all) === %{"foo" => Decimal.new("0")}
+  end
+
   test "arrays" do
     assert_fail_with "[", "unexpected end of input at position 1"
     assert_fail_with "[,", "unexpected byte at position 1: 0x2C (',')"
