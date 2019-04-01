@@ -94,7 +94,10 @@ defmodule Jason.EncoderTest do
 
   test "Decimal" do
     decimal = Decimal.new("1.0")
-    assert to_json(decimal) == ~s("1.0")
+    assert to_json(decimal) == "1.0"
+ 
+    decimal = Decimal.new("123e1")
+    assert to_json(decimal) == "1230"
   end
 
   defmodule Derived do
