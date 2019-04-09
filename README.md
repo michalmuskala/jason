@@ -116,8 +116,8 @@ http://michal.muskala.eu/jason/decode.html and http://michal.muskala.eu/jason/en
 
 ### Running
 
-Benchmarks against most popular Elixir & Erlang json libraries can be executed
-with `mix bench.encode` and `mix bench.decode`.
+Benchmarks against most popular Elixir & Erlang json libraries can be executed after
+going into the `bench/` folder and then executing `mix bench.encode` and `mix bench.decode`.
 A HTML report of the benchmarks (after their execution) can be found in
 `bench/output/encode.html` and `bench/output/decode.html` respectively.
 

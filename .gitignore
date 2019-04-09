@@ -22,3 +22,7 @@ erl_crash.dump
 # Ignore benchmark output
 /bench/output
 /bench/snapshots
+
+# Ignore benchmark specific dependencies etc (separate project to work around problems with dependencies)
+/bench/_build
+/bench/deps
