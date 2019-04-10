@@ -28,23 +28,22 @@ defmodule Jason.Mixfile do
 
   defp deps() do
     [
-      {:decimal, "~> 1.0", optional: true},
-      {:benchee, "~> 0.8", only: :bench},
-      {:benchee_html, "~> 0.1", only: :bench, github: "michalmuskala/benchee_html"},
-      {:poison, "~> 3.0", only: :bench},
+      {:decimal, "~> 1.7", optional: true},
+      {:benchee, "~> 1.0", only: :bench},
+      {:poison, "~> 4.0", only: :bench},
       {:exjsx, "~> 4.0", only: :bench},
       {:tiny, "~> 1.0", only: :bench},
       {:jsone, "~> 1.4", only: :bench},
       {:jiffy, "~> 0.14", only: :bench},
-      {:json, "~> 1.0", only: :bench},
+      {:json, "~> 1.2", only: :bench},
       {:dialyxir, "~> 0.5", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.18", only: :docs},
+      {:ex_doc, "~> 0.20.1", only: :docs},
     ] ++ maybe_stream_data()
   end
 
   defp maybe_stream_data() do
     if Version.match?(System.version(), "~> 1.5") do
-      [{:stream_data, "~> 0.4", only: :test}]
+      [{:stream_data, "~> 0.4.3", only: :test}]
     else
       []
     end
