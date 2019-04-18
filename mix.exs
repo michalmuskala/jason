@@ -43,6 +43,7 @@ defmodule Jason.Mixfile do
 
   defp dialyzer() do
     [
+      plt_add_apps: [:decimal],
       ignore_warnings: "dialyzer.ignore"
     ]
   end
