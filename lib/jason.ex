@@ -8,7 +8,7 @@ defmodule Jason do
   @type escape :: :json | :unicode_safe | :html_safe | :javascript_safe
   @type maps :: :naive | :strict
 
-  @type encode_opt :: {:escape, escape} | {:maps, maps} | {:pretty, true | Formatter.opts()}
+  @type encode_opt :: {:escape, escape} | {:maps, maps} | {:pretty, boolean | Formatter.opts()}
 
   @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
 
