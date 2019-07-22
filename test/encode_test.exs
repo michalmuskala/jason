@@ -151,6 +151,11 @@ defmodule Jason.EncoderTest do
     assert to_json(t) == ~s({"baz":"bar","foo":"bag","quux":42})
   end
 
+  test "nested keyword list" do
+    d = %{map: [containing: "a", keyword: "list"]}
+    assert to_json(d) == ~s({"map":{"containing":"a","keyword":"list"}})
+  end
+
   test "EncodeError" do
     assert_raise Protocol.UndefinedError, fn ->
       to_json(self())

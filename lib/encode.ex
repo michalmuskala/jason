@@ -89,7 +89,12 @@ defmodule Jason.Encode do
   end
 
   def value(value, escape, encode_map) when is_list(value) do
-    list(value, escape, encode_map)
+    cond do
+      Keyword.keyword?(value) and length(value) > 0 ->
+        keyword(value, {escape, encode_map})
+      true ->
+        list(value, escape, encode_map)
+    end
   end
 
   def value(%{__struct__: module} = value, escape, encode_map) do
