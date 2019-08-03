@@ -32,6 +32,7 @@ defmodule Jason.DecodeTest do
     assert parse!("-99.99e-99") == -99.99e-99
     assert parse!("123456789.123456789e123") == 123456789.123456789e123
   end
+
   test "strings" do
     assert_fail_with ~s("), "unexpected end of input at position 1"
     assert_fail_with ~s("\\"), "unexpected end of input at position 3"
@@ -83,6 +84,17 @@ defmodule Jason.DecodeTest do
     end
     key = String.to_atom(key)
     assert parse!(~s({"#{key}": "value"}), keys: :atoms) == %{key => "value"}
+  end
+
+  test "objects with strict option" do
+    assert parse!("{}", keys: :atoms, maps: :strict) == %{}
+    assert parse!("{}", keys: :atoms!, maps: :strict) == %{}
+    assert parse!(~s({"foo": "bar"}), keys: :atoms, maps: :strict) == %{foo: "bar"}
+    assert parse!(~s({"foo": "bar"}), keys: :atoms!, maps: :strict) == %{foo: "bar"}
+
+    assert_raise DecodeError, "duplicate key: a", fn ->
+      parse!(~s({"a": "1", "c": "3", "a": "3"}), maps: :strict)
+    end
   end
 
   test "copying strings on decode" do
