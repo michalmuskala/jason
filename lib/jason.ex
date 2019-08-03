@@ -14,7 +14,7 @@ defmodule Jason do
 
   @type strings :: :reference | :copy
 
-  @type decode_opt :: {:keys, keys} | {:strings, strings}
+  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:maps, :strict}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -35,6 +35,12 @@ defmodule Jason do
       * `:copy` - always copies the strings. This option is especially useful when parts of the
         decoded data will be stored for a long time (in ets or some process) to avoid keeping
         the reference to the original data.
+
+    * `:maps` - controls how json are decoded. Possible values are:
+
+      * `:strict` - checks the json for duplicate keys and raises
+        if they appear. For example `{"a": 1, "a": 2}` would be
+        rejected, since both keys would be decoded to the key `"a"`.
 
   ## Decoding keys to atoms
 
