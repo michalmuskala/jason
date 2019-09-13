@@ -22,7 +22,7 @@ defprotocol Jason.Encoder do
       end
 
   If we were to call `@derive Jason.Encoder` just before `defstruct`,
-  an implementaion similar to the follwing implementation would be generated:
+  an implementation similar to the following implementation would be generated:
 
       defimpl Jason.Encoder, for: Test do
         def encode(value, opts) do
@@ -31,7 +31,7 @@ defprotocol Jason.Encoder do
       end
 
   If we called `@derive {Jason.Encoder, only: [:foo]}`, an implementation
-  similar to the following implementation would be genrated:
+  similar to the following implementation would be generated:
 
       defimpl Jason.Encoder, for: Test do
         def encode(value, opts) do
