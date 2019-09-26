@@ -93,7 +93,7 @@ defmodule Jason do
       * `:json` (default) - the regular JSON escaping as defined by RFC 7159.
       * `:javascript_safe` - additionally escapes the LINE SEPARATOR (U+2028)
         and PARAGRAPH SEPARATOR (U+2029) characters to make the produced JSON
-        valid JavaSciprt.
+        valid JavaScript.
       * `:html_safe` - similar to `:javascript_safe`, but also escapes the `/`
         character to prevent XSS.
       * `:unicode_safe` - escapes all non-ascii characters.
