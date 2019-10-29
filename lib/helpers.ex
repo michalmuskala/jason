@@ -30,12 +30,20 @@ defmodule Jason.Helpers do
 
   """
   defmacro json_map(kv) do
+    kv_values = Macro.expand(kv, __CALLER__)
+    kv_vars = Enum.map(kv_values, fn {key, _} -> {key, generated_var(key, Codegen)} end)
+
+    values = Enum.map(kv_values, &elem(&1, 1))
+    vars = Enum.map(kv_vars, &elem(&1, 1))
+
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
     encode_args = [escape, encode_map]
-    kv_iodata = Codegen.build_kv_iodata(Macro.expand(kv, __CALLER__), encode_args)
+    kv_iodata = Codegen.build_kv_iodata(kv_vars, encode_args)
 
     quote do
+      {unquote_splicing(vars)} = {unquote_splicing(values)}
+
       %Fragment{
         encode: fn {unquote(escape), unquote(encode_map)} ->
           unquote(kv_iodata)
