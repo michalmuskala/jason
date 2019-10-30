@@ -56,7 +56,7 @@ defmodule Jason.Mixfile do
   defp package() do
     [
       maintainers: ["Michał Muskała"],
-      licenses: ["Apache 2.0"],
+      licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/michalmuskala/jason"}
     ]
   end
