@@ -7,6 +7,14 @@ defmodule Jason.HelpersTest do
   doctest Helpers
 
   describe "json_map/2" do
+    test "does not delay execution" do
+      %Fragment{} = json_map(
+        foo: Process.put(:json, :bar)
+      )
+
+      assert Process.get(:json) == :bar
+    end
+
     test "produces same output as regular encoding" do
       assert %Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
       assert Jason.encode!(helper) == Jason.encode!(%{bar: 2, baz: 3, foo: 1})
