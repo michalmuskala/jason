@@ -99,8 +99,8 @@ defmodule Jason.DecodeTest do
     assert [{key, value}] = Map.to_list(parse!(~s({"foo": "bar"})))
     assert key == "foo"
     assert value == "bar"
-    assert :binary.referenced_byte_size(key) == 14
-    assert :binary.referenced_byte_size(value) == 14
+    assert :binary.referenced_byte_size(key) == 3
+    assert :binary.referenced_byte_size(value) == 3
   end
 
   test "custom object key mapping function" do
