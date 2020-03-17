@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0 (17.03.2020)
+
+### Enhancements
+
+* Add `Jason.Encode.keyword/2`
+  ([cb1f26a](https://github.com/michalmuskala/jason/commit/cb1f26a)).
+
+### Bug fixes
+
+* Fix `Jason.Helpers.json_map/1` value expansion
+  ([70b046a](https://github.com/michalmuskala/jason/commit/70b046a)).
+
 ## 1.1.2 (19.10.2018)
 
 ### Bug fixes
