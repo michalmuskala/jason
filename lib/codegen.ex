@@ -88,26 +88,6 @@ defmodule Jason.Codegen do
     end)
   end
 
-  defmacro jump_table_case(var, rest, ranges, default) do
-    clauses =
-      ranges
-      |> jump_table(default)
-      |> Enum.flat_map(fn {byte_value, action} ->
-           quote do
-             <<unquote(byte_value), unquote(rest)::bits>> ->
-               unquote(action)
-           end
-         end)
-
-    clauses = clauses ++ quote(do: (<<>> -> empty_error(original, skip)))
-
-    quote do
-      case unquote(var) do
-        unquote(clauses)
-      end
-    end
-  end
-
   defp resize(array, size), do: :array.resize(size, array)
 
   defp ranges_to_orddict(ranges) do
