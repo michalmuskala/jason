@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.1 (04.05.2020)
+
+### Security
+
+* Fix `html_safe` escaping in `Jason.encode`
+
+The `<!--` sequence of characters would not be escaped in `Jason.encode`
+with`html_escape` mode, which could lead to DoS attacks when used for
+embedding of arbitrary, user controlled strings into HTML through JSON
+(e.g. inside of `<script>` tags).
+
+If you were not using the `html_safe` option, you are not affected.
+
+Affected versions: < 1.2.1
+Patched versions: >= 1.2.1
+
 ## 1.2.0 (17.03.2020)
 
 ### Enhancements
