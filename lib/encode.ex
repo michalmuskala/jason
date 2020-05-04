@@ -261,7 +261,7 @@ defmodule Jason.Encode do
   slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')
   surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
-  html_ranges = [{0x00..0x1F, :unicode}, {?/, ?/} | slash_escapes]
+  html_ranges = [{0x00..0x1F, :unicode}, {?<, :unicode}, {?/, ?/} | slash_escapes]
   escape_jt = Codegen.jump_table(html_ranges, :error)
 
   Enum.each(escape_jt, fn
