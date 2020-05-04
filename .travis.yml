@@ -9,6 +9,8 @@ cache:
 
 matrix:
   include:
+    - otp_release: 22.3
+      elixir: 1.10
     - otp_release: 21.3
       elixir: 1.8
     - otp_release: 21.3
