@@ -87,20 +87,22 @@ defmodule Jason.DecodeTest do
 
   test "copying strings on decode" do
     assert parse!("{}", strings: :copy) == %{}
+    as = String.duplicate("a", 101)
+    bs = String.duplicate("b", 102)
 
     # Copy decode, copies the key
-    assert [{key, value}] = Map.to_list(parse!(~s({"foo": "bar"}), strings: :copy))
-    assert key == "foo"
-    assert value == "bar"
-    assert :binary.referenced_byte_size(key) == 3
-    assert :binary.referenced_byte_size(value) == 3
+    assert [{key, value}] = Map.to_list(parse!(~s({"#{as}": "#{bs}"}), strings: :copy))
+    assert key == as
+    assert value == bs
+    assert :binary.referenced_byte_size(key) == byte_size(as)
+    assert :binary.referenced_byte_size(value) == byte_size(bs)
 
     # Regular decode references the original string
-    assert [{key, value}] = Map.to_list(parse!(~s({"foo": "bar"})))
-    assert key == "foo"
-    assert value == "bar"
-    assert :binary.referenced_byte_size(key) == 14
-    assert :binary.referenced_byte_size(value) == 14
+    assert [{key, value}] = Map.to_list(parse!(~s({"#{as}": "#{bs}"})))
+    assert key == as
+    assert value == bs
+    assert :binary.referenced_byte_size(key) > byte_size(as) + byte_size(bs)
+    assert :binary.referenced_byte_size(value) > byte_size(bs) + byte_size(bs)
   end
 
   test "custom object key mapping function" do
