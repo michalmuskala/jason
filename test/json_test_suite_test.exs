@@ -1,7 +1,7 @@
-defmodule Jason.JsonTestSuite do
+defmodule JasonVendored.JsonTestSuite do
   use ExUnit.Case, async: true
 
-  alias Jason.DecodeError
+  alias JasonVendored.DecodeError
 
   # Implementation-dependent tests
   i_succeeds = [
@@ -10,8 +10,9 @@ defmodule Jason.JsonTestSuite do
     "number_too_big_neg_int.json",
     "number_too_big_pos_int.json",
     "number_very_big_negative_int.json",
-    "structure_500_nested_arrays.json",
+    "structure_500_nested_arrays.json"
   ]
+
   i_fails = [
     "number_huge_exp.json",
     "number_neg_int_huge_exp.json",
@@ -41,32 +42,35 @@ defmodule Jason.JsonTestSuite do
     "string_truncated-utf-8.json",
     "string_utf16BE_no_BOM.json",
     "string_utf16LE_no_BOM.json",
-    "structure_UTF-8_BOM_empty_object.json",
+    "structure_UTF-8_BOM_empty_object.json"
   ]
 
   for path <- Path.wildcard("json_test_suite/*") do
     case Path.basename(path) do
       "y_" <> name ->
         test name do
-          Jason.decode!(File.read!(unquote(path)))
+          JasonVendored.decode!(File.read!(unquote(path)))
         end
+
       "n_" <> name ->
         test name do
           assert_raise DecodeError, ~r"unexpected", fn ->
-            Jason.decode!(File.read!(unquote(path)))
+            JasonVendored.decode!(File.read!(unquote(path)))
           end
         end
+
       "i_" <> name ->
         cond do
           name in i_fails ->
             test name do
               assert_raise DecodeError, ~r"unexpected", fn ->
-                Jason.decode!(File.read!(unquote(path)))
+                JasonVendored.decode!(File.read!(unquote(path)))
               end
             end
+
           name in i_succeeds ->
             test name do
-              Jason.decode!(File.read!(unquote(path)))
+              JasonVendored.decode!(File.read!(unquote(path)))
             end
         end
     end

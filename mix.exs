@@ -1,11 +1,11 @@
-defmodule Jason.Mixfile do
+defmodule JasonVendored.Mixfile do
   use Mix.Project
 
   @version "1.2.1"
 
   def project() do
     [
-      app: :jason,
+      app: :jason_vendored,
       version: @version,
       elixir: "~> 1.4",
       start_permanent: Mix.env() == :prod,
@@ -29,7 +29,7 @@ defmodule Jason.Mixfile do
     [
       {:decimal, "~> 1.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.18", only: :docs},
+      {:ex_doc, "~> 0.18", only: :docs}
     ] ++ maybe_stream_data()
   end
 
@@ -64,7 +64,7 @@ defmodule Jason.Mixfile do
   defp docs() do
     [
       main: "readme",
-      name: "Jason",
+      name: "JasonVendored",
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/jason",
       source_url: "https://github.com/michalmuskala/jason",

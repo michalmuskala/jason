@@ -1,4 +1,4 @@
-defmodule JasonBench.MixProject do
+defmodule JasonVendoredBench.MixProject do
   use Mix.Project
 
   def project do
@@ -30,7 +30,7 @@ defmodule JasonBench.MixProject do
       {:tiny, "~> 1.0"},
       {:jsone, "~> 1.4"},
       {:jiffy, "~> 0.14"},
-      {:json, "~> 1.0"},
+      {:json, "~> 1.0"}
     ]
   end
 end

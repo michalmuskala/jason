@@ -1,4 +1,4 @@
-defmodule Jason.Formatter do
+defmodule JasonVendored.Formatter do
   @moduledoc ~S"""
   Pretty-printing and minimizing functions for JSON-encoded data.
 
@@ -34,7 +34,7 @@ defmodule Jason.Formatter do
 
   ## Examples
 
-      iex> Jason.Formatter.pretty_print(~s|{"a":{"b": [1, 2]}}|)
+      iex> JasonVendored.Formatter.pretty_print(~s|{"a":{"b": [1, 2]}}|)
       ~s|{
         "a": {
           "b": [
@@ -86,7 +86,7 @@ defmodule Jason.Formatter do
 
   ## Examples
 
-      iex> Jason.Formatter.minimize(~s|{ "a" : "b" , "c": \n\n 2}|)
+      iex> JasonVendored.Formatter.minimize(~s|{ "a" : "b" , "c": \n\n 2}|)
       ~s|{"a":"b","c":2}|
 
   """
@@ -121,6 +121,7 @@ defmodule Jason.Formatter do
 
   defp parse_opts([{option, value} | opts], indent, line, record, colon) do
     value = IO.iodata_to_binary(value)
+
     case option do
       :indent -> parse_opts(opts, value, line, record, colon)
       :record_separator -> parse_opts(opts, indent, line, value, colon)
@@ -225,8 +226,10 @@ defmodule Jason.Formatter do
     case :binary.match(binary, ["\"", "\\"]) do
       :nomatch ->
         {[output_acc | binary], &pp_string(&1, &2, false, cont)}
+
       {pos, 1} ->
         {head, tail} = :erlang.split_binary(binary, pos + 1)
+
         case :binary.at(binary, pos) do
           ?\\ -> pp_string(tail, [output_acc | head], true, cont)
           ?" -> cont.(tail, [output_acc | head])

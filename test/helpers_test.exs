@@ -1,37 +1,35 @@
-defmodule Jason.HelpersTest do
+defmodule JasonVendored.HelpersTest do
   use ExUnit.Case, async: true
 
-  alias Jason.{Helpers, Fragment, EncodeError}
+  alias JasonVendored.{Helpers, Fragment, EncodeError}
   import Helpers
 
   doctest Helpers
 
   describe "json_map/2" do
     test "does not delay execution" do
-      %Fragment{} = json_map(
-        foo: Process.put(:json, :bar)
-      )
+      %Fragment{} = json_map(foo: Process.put(:json, :bar))
 
       assert Process.get(:json) == :bar
     end
 
     test "produces same output as regular encoding" do
       assert %Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
-      assert Jason.encode!(helper) == Jason.encode!(%{bar: 2, baz: 3, foo: 1})
+      assert JasonVendored.encode!(helper) == JasonVendored.encode!(%{bar: 2, baz: 3, foo: 1})
     end
 
     test "rejects keys with invalid characters" do
-      assert_eval_raise EncodeError, """
+      assert_eval_raise(EncodeError, """
       json_map("/foo": 1)
-      """
+      """)
 
-      assert_eval_raise EncodeError, ~S"""
+      assert_eval_raise(EncodeError, ~S"""
       json_map("\\foo": 1)
-      """
+      """)
 
-      assert_eval_raise EncodeError, ~S"""
+      assert_eval_raise(EncodeError, ~S"""
       json_map("\"foo": 1)
-      """
+      """)
     end
   end
 
@@ -40,7 +38,7 @@ defmodule Jason.HelpersTest do
       map = %{escape: 1}
       assert %Fragment{} = helper = json_map_take(map, [:escape])
       assert Keyword.keys(binding()) == [:helper, :map]
-      assert Jason.encode!(helper) == Jason.encode!(map)
+      assert JasonVendored.encode!(helper) == JasonVendored.encode!(map)
     end
 
     test "fails gracefully" do

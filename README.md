@@ -1,11 +1,11 @@
-# Jason
+# JasonVendored
 
 A blazing fast JSON parser and generator in pure Elixir.
 
 The parser and generator are at least twice as fast as other Elixir/Erlang libraries
 (most notably `Poison`).
 The performance is comparable to `jiffy`, which is implemented in C as a NIF.
-Jason is usually only twice as slow.
+JasonVendored is usually only twice as slow.
 
 Both parser and generator fully conform to
 [RFC 8259](https://tools.ietf.org/html/rfc8259) and
@@ -26,10 +26,10 @@ end
 ## Basic Usage
 
 ``` elixir
-iex(1)> Jason.encode!(%{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"})
+iex(1)> JasonVendored.encode!(%{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"})
 "{\"age\":44,\"name\":\"Steve Irwin\",\"nationality\":\"Australian\"}"
 
-iex(2)> Jason.decode!(~s({"age":44,"name":"Steve Irwin","nationality":"Australian"}))
+iex(2)> JasonVendored.decode!(~s({"age":44,"name":"Steve Irwin","nationality":"Australian"}))
 %{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"}
 ```
 
@@ -39,17 +39,17 @@ Full documentation can be found at [https://hexdocs.pm/jason](https://hexdocs.pm
 
 ### Postgrex
 
-Versions starting at 0.14.0 use `Jason` by default. For earlier versions, please refer to
+Versions starting at 0.14.0 use `JasonVendored` by default. For earlier versions, please refer to
 [previous versions of this document](https://github.com/michalmuskala/jason/tree/v1.1.2#postgrex).
 
 ### Ecto
 
-Versions starting at 3.0.0 use `Jason` by default. For earlier versions, please refer to
+Versions starting at 3.0.0 use `JasonVendored` by default. For earlier versions, please refer to
 [previous versions of this document](https://github.com/michalmuskala/jason/tree/v1.1.2#ecto).
 
 ### Plug (and Phoenix)
 
-Phoenix starting at 1.4.0 uses `Jason` by default. For earlier versions, please refer to
+Phoenix starting at 1.4.0 uses `JasonVendored` by default. For earlier versions, please refer to
 [previous versions of this document](https://github.com/michalmuskala/jason/tree/v1.1.2#plug-and-phoenix).
 
 ### Absinthe
@@ -60,12 +60,12 @@ You need to pass the `:json_codec` option to `Absinthe.Plug`
 # When called directly:
 plug Absinthe.Plug,
   schema: MyApp.Schema,
-  json_codec: Jason
+  json_codec: JasonVendored
 
 # When used in phoenix router:
 forward "/api",
   to: Absinthe.Plug,
-  init_opts: [schema: MyApp.Schema, json_codec: Jason]
+  init_opts: [schema: MyApp.Schema, json_codec: JasonVendored]
 ```
 
 ## Benchmarks
@@ -85,24 +85,24 @@ A HTML report of the benchmarks (after their execution) can be found in
 
 ## Differences to Poison
 
-Jason has a couple feature differences compared to Poison.
+JasonVendored has a couple feature differences compared to Poison.
 
-  * Jason follows the JSON spec more strictly, for example it does not allow
+  * JasonVendored follows the JSON spec more strictly, for example it does not allow
     unescaped newline characters in JSON strings - e.g. `"\"\n\""` will
     produce a decoding error.
   * no support for decoding into data structures (the `as:` option).
   * no built-in encoders for `MapSet`, `Range` and `Stream`.
   * no support for encoding arbitrary structs - explicit implementation
-    of the `Jason.Encoder` protocol is always required.
+    of the `JasonVendored.Encoder` protocol is always required.
   * different pretty-printing customisation options (default `pretty: true` works the same)
 
 If you require encoders for any of the unsupported collection types, I suggest
 adding the needed implementations directly to your project:
 
 ```elixir
-defimpl Jason.Encoder, for: [MapSet, Range, Stream] do
+defimpl JasonVendored.Encoder, for: [MapSet, Range, Stream] do
   def encode(struct, opts) do
-    Jason.Encode.list(Enum.to_list(struct), opts)
+    JasonVendored.Encode.list(Enum.to_list(struct), opts)
   end
 end
 ```
@@ -112,7 +112,7 @@ if you own the struct, you can derive the implementation specifying
 which fields should be encoded to JSON:
 
 ```elixir
-@derive {Jason.Encoder, only: [....]}
+@derive {JasonVendored.Encoder, only: [....]}
 defstruct # ...
 ```
 
@@ -121,7 +121,7 @@ used carefully to avoid accidentally leaking private information
 when new fields are added:
 
 ```elixir
-@derive Jason.Encoder
+@derive JasonVendored.Encoder
 defstruct # ...
 ```
 
@@ -129,13 +129,13 @@ Finally, if you don't own the struct you want to encode to JSON,
 you may use `Protocol.derive/3` placed outside of any module:
 
 ```elixir
-Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
-Protocol.derive(Jason.Encoder, NameOfTheStruct)
+Protocol.derive(JasonVendored.Encoder, NameOfTheStruct, only: [...])
+Protocol.derive(JasonVendored.Encoder, NameOfTheStruct)
 ```
 
 ## License
 
-Jason is released under the Apache License 2.0 - see the [LICENSE](LICENSE) file.
+JasonVendored is released under the Apache License 2.0 - see the [LICENSE](LICENSE) file.
 
 Some elements of tests and benchmarks have their origins in the
 [Poison library](https://github.com/devinus/poison) and were initially licensed under [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/).
