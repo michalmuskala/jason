@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2 (08.09.2020)
+
+### Enhancements
+
+* Support Decimal 2.0
+
 ## 1.2.1 (04.05.2020)
 
 ### Security
