@@ -27,7 +27,7 @@ defmodule Jason.Mixfile do
 
   defp deps() do
     [
-      {:decimal, "~> 1.0", optional: true},
+      {:decimal, "~> 1.0 or ~> 2.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.18", only: :docs},
     ] ++ maybe_stream_data()
