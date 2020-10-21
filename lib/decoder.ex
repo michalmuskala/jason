@@ -65,8 +65,20 @@ defmodule Jason.Decoder do
   defp string_decode_function(%{strings: :copy}), do: &:binary.copy/1
   defp string_decode_function(%{strings: :reference}), do: &(&1)
 
-  defp float_decode_function(%{floats: :decimals}), do: &Decimal.new/1
-  defp float_decode_function(%{floats: :native}), do: &:erlang.binary_to_float/1
+  defp float_decode_function(%{floats: :decimals}) do
+    fn string, _error_fun -> Decimal.new(string) end
+  end
+
+  defp float_decode_function(%{floats: :native}) do
+    fn string, token, skip ->
+      try do
+        :erlang.binary_to_float(string)
+      catch
+        :error, :badarg ->
+          token_error(token, skip)
+      end
+    end
+  end
 
   defp value(data, original, skip, stack, key_decode, string_decode, float_decode) do
     bytecase data do
@@ -607,10 +619,7 @@ defmodule Jason.Decoder do
   end
 
   defp try_parse_float(string, token, float_decode, skip) do
-    float_decode.(string)
-  catch
-    :error, :badarg ->
-      token_error(token, skip)
+    float_decode.(string, token, skip)
   end
 
   defp error(<<_rest::bits>>, _original, skip, _stack, _key_decode, _string_decode, _float_decode) do
