@@ -28,9 +28,11 @@ jobs:
             otp: 20.3.8.26
             warnings_as_errors: true # 1.10 is not enough as its --warnigs-as-errors has bugs https://github.com/elixir-lang/elixir/issues/10073
           - elixir: 1.10.x
-            otp: 21.3.8.17
+            otp: 21.3.8.18
           - elixir: 1.10.x
-            otp: 23.0.3
+            otp: 22.3.4.12
+          - elixir: 1.11.x
+            otp: 23.1.1
             warnings_as_errors: true
             static_analysis: true
     env:
