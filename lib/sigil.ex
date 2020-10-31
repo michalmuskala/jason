@@ -4,34 +4,54 @@ defmodule Jason.Sigil do
 
   Calls `Jason.decode!/2` with modifiers mapped to options.
 
+  Given a string literal without interpolations, decodes the
+  string at compile-time.
+
   ## Modifiers
 
   See `Jason.decode/2` for detailed descriptions.
 
-    * `a` - maps to `{:keys, :atoms}`
-    * `A` - maps to `{:keys, :atoms!}`
-    * `r` - maps to `{:strings, :reference}`
-    * `c` - maps to `{:strings, :copy}`
+    * `a` - equivalent to `{:keys, :atoms}` option
+    * `A` - equivalent to `{:keys, :atoms!}` option
+    * `r` - equivalent to `{:strings, :reference}` option
+    * `c` - equivalent to `{:strings, :copy}` option
 
   ## Examples
 
-      iex> {~j"0", ~j"[1, 2, 3]", ~j'"string"'r, ~j"{}"}
-      {0, [1, 2, 3], "string", %{}}
+      iex> ~j"0"
+      0
+
+      iex> ~j"[1, 2, 3]"
+      [1, 2, 3]
+
+      iex> ~j'"string"'r
+      "string"
+
+      iex> ~j"{}"
+      %{}
 
       iex> ~j'{"atom": "value"}'a
       %{atom: "value"}
 
       iex> ~j'{"#{:j}": #{'"j"'}}'A
       %{j: "j"}
+
   """
-  @spec sigil_j(binary, charlist) :: term | no_return
-  def sigil_j(input, []), do: Jason.decode!(input)
-  def sigil_j(input, modifiers), do: Jason.decode!(input, mods_to_opts(modifiers))
+  defmacro sigil_j(term, modifiers)
+
+  defmacro sigil_j({:<<>>, _meta, [string]}, modifiers) when is_binary(string) do
+    Macro.escape(Jason.decode!(string, mods_to_opts(modifiers)))
+  end
+
+  defmacro sigil_j(term, modifiers) do
+    quote(do: Jason.decode!(unquote(term), unquote(mods_to_opts(modifiers))))
+  end
 
   @doc ~S"""
   Handles the sigil `~J` for raw JSON strings.
 
-  Decodes a raw string ignoring Elixir interpolations and escape characters.
+  Decodes a raw string ignoring Elixir interpolations and
+  escape characters at compile-time.
 
   ## Examples
 
@@ -42,13 +62,16 @@ defmodule Jason.Sigil do
       "x\\y"
 
       iex> ~J'{"#{key}": "#{}"}'a
-      %{"\#{key}": "#{}"}
+      %{"\#{key}": "\#{}"}
   """
-  @spec sigil_J(binary, charlist) :: term | no_return
-  def sigil_J(input, modifiers), do: sigil_j(input, modifiers)
+  defmacro sigil_J(term, modifiers)
 
-  @spec mods_to_opts(charlist) :: [Jason.decode_opt()] | no_return
-  def mods_to_opts(modifiers) do
+  defmacro sigil_J({:<<>>, _meta, [string]}, modifiers) when is_binary(string) do
+    Macro.escape(Jason.decode!(string, mods_to_opts(modifiers)))
+  end
+
+  @spec mods_to_opts(charlist) :: [Jason.decode_opt()]
+  defp mods_to_opts(modifiers) do
     modifiers
     |> Enum.map(fn
       ?a -> {:keys, :atoms}
