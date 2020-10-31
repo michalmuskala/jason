@@ -6,10 +6,12 @@ defmodule Jason.Sigil do
 
   ## Modifiers
 
-    * `a` - keys are converted to atoms using String.to_atom/1
-    * `A` - keys are converted to atoms using String.to_existing_atom/1
-    * `r` - when possible tries to create a sub-binary into the original
-    * `c` - always copies the strings
+  See `Jason.decode/2` for detailed descriptions.
+
+    * `a` - maps to `{:keys, :atoms}`
+    * `A` - maps to `{:keys, :atoms!}`
+    * `r` - maps to `{:strings, :reference}`
+    * `c` - maps to `{:strings, :copy}`
 
   ## Examples
 
@@ -29,19 +31,21 @@ defmodule Jason.Sigil do
   @doc ~S"""
   Handles the sigil `~J` for raw JSON strings.
 
-   without Elixir interpolations
+  Decodes a raw string ignoring Elixir interpolations and escape characters.
 
   ## Examples
 
       iex> ~J'"#{string}"'
-      "#{string}"
+      "\#{string}"
+
+      iex> ~J'"\u0078\\y"'
+      "x\\y"
 
       iex> ~J'{"#{key}": "#{}"}'a
       %{"\#{key}": "#{}"}
   """
   @spec sigil_J(binary, charlist) :: term | no_return
-  def sigil_J(input, modifiers),
-    do: sigil_j(input, modifiers)
+  def sigil_J(input, modifiers), do: sigil_j(input, modifiers)
 
   @spec mods_to_opts(charlist) :: [Jason.decode_opt()] | no_return
   def mods_to_opts(modifiers) do
