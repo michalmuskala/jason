@@ -135,15 +135,35 @@ defimpl Jason.Encoder, for: Any do
   end
 
   defp fields_to_encode(struct, opts) do
+    fields = Map.keys(struct)
+
     cond do
       only = Keyword.get(opts, :only) ->
-        only
+        case only -- fields do
+          [] ->
+            only
+
+          error_keys ->
+            raise ArgumentError,
+              "`:only` specified keys (#{inspect(error_keys)}) that are not defined in defstruct: " <>
+                "#{inspect(fields -- [:__struct__])}"
+
+        end
 
       except = Keyword.get(opts, :except) ->
-        Map.keys(struct) -- [:__struct__ | except]
+        case except -- fields do
+          [] ->
+            fields -- [:__struct__ | except]
+
+          error_keys ->
+            raise ArgumentError,
+              "`:except` specified keys (#{inspect(error_keys)}) that are not defined in defstruct: " <>
+                "#{inspect(fields -- [:__struct__])}"
+
+        end
 
       true ->
-        Map.keys(struct) -- [:__struct__]
+        fields -- [:__struct__]
     end
   end
 end
