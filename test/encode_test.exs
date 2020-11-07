@@ -134,6 +134,32 @@ defmodule Jason.EncoderTest do
     assert to_json(derived_using_except) == ~s({"size":10})
   end
 
+  test "@derive validate `except:`" do
+    message = "`:except` specified keys ([:invalid]) that are not defined in defstruct: [:name]"
+
+    assert_raise ArgumentError, message, fn ->
+      Code.eval_string("""
+      defmodule InvalidExceptField do
+        @derive {Jason.Encoder, except: [:invalid]}
+        defstruct name: ""
+      end
+      """)
+    end
+  end
+
+  test "@derive validate `only:`" do
+    message = "`:only` specified keys ([:invalid]) that are not defined in defstruct: [:name]"
+
+    assert_raise ArgumentError, message, fn ->
+      Code.eval_string("""
+      defmodule InvalidOnlyField do
+        @derive {Jason.Encoder, only: [:invalid]}
+        defstruct name: ""
+      end
+      """)
+    end
+  end
+
   defmodule KeywordTester do
     defstruct [:baz, :foo, :quux]
   end
