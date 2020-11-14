@@ -38,6 +38,11 @@ defmodule Jason do
         decoded data will be stored for a long time (in ets or some process) to avoid keeping
         the reference to the original data.
 
+    * `:floats` - controls how floats are decoded. Possible values are:
+
+      * `:native` (default) - Native conversion from binary to float using `:erlang.binary_to_float/1`,
+      * `:decimals` - uses `Decimal.new/1` to parse the binary into a Decimal struct with arbitrary precision.
+
   ## Decoding keys to atoms
 
   The `:atoms` option uses the `String.to_atom/1` call that can create atoms at runtime.
