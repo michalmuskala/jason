@@ -66,7 +66,14 @@ defmodule Jason.Decoder do
   defp string_decode_function(%{strings: :reference}), do: &(&1)
 
   defp float_decode_function(%{floats: :decimals}) do
-    fn string, _error_fun -> Decimal.new(string) end
+    fn string, token, skip ->
+      try do
+        Decimal.new(string)
+      catch
+        Decimal.Error ->
+          token_error(token, skip)
+      end
+    end
   end
 
   defp float_decode_function(%{floats: :native}) do
