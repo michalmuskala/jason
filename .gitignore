@@ -26,3 +26,5 @@ erl_crash.dump
 # Ignore benchmark specific dependencies etc (separate project to work around problems with dependencies)
 /bench/_build
 /bench/deps
+
+.DS_Store

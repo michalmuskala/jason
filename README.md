@@ -133,6 +133,24 @@ Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
 Protocol.derive(Jason.Encoder, NameOfTheStruct)
 ```
 
+## List of Most Common custom Jason.Encoder 
+
+Feel you free of share with the community your encode implement of the most common library that you use it. It´s can be very useful for the community. ;) 谢谢
+
+# BSON.ObjectId of :mongodb 
+
+```elixir
+defimpl Jason.Encoder, for: BSON.ObjectId do
+  ## Defimpl Encode for {:mongodb, "~> 0.5.1"}
+  def encode(bson_id,_args) do
+    id_string_format = BSON.ObjectId.encode!(bson_id)
+    id_string_with_json_format = "\"#{id_string_format}\""
+
+    id_string_with_json_format
+  end
+end
+```
+
 ## License
 
 Jason is released under the Apache License 2.0 - see the [LICENSE](LICENSE) file.
