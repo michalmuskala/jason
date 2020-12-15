@@ -1,6 +1,7 @@
 defmodule Jason.Mixfile do
   use Mix.Project
 
+  @source_url "https://github.com/michalmuskala/jason"
   @version "1.2.2"
 
   def project() do
@@ -29,7 +30,7 @@ defmodule Jason.Mixfile do
     [
       {:decimal, "~> 1.0 or ~> 2.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.18", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
     ] ++ maybe_stream_data()
   end
 
@@ -58,7 +59,7 @@ defmodule Jason.Mixfile do
     [
       maintainers: ["Michał Muskała"],
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => "https://github.com/michalmuskala/jason"}
+      links: %{"GitHub" => @source_url}
     ]
   end
 
@@ -68,10 +69,8 @@ defmodule Jason.Mixfile do
       name: "Jason",
       source_ref: "v#{@version}",
       canonical: "http://hexdocs.pm/jason",
-      source_url: "https://github.com/michalmuskala/jason",
-      extras: [
-        "README.md"
-      ]
+      source_url: @source_url,
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"]
     ]
   end
 end
