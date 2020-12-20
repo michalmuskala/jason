@@ -3,7 +3,7 @@ defmodule Jason.Formatter do
   Pretty-printing and minimizing functions for JSON-encoded data.
 
   Input is required to be in an 8-bit-wide encoding such as UTF-8 or Latin-1
-  in `t:iodata/0` format. Input must ve valid JSON, invalid JSON may produce
+  in `t:iodata/0` format. Input must have valid JSON, invalid JSON may produce
   unexpected results or errors.
   """
 
