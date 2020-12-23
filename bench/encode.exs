@@ -19,6 +19,7 @@ encode_inputs = [
   "JSON Generator",
   "UTF-8 unescaped",
   "Issue 90",
+  "Canada",
 ]
 
 read_data = fn (name) ->
