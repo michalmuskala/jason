@@ -29,6 +29,8 @@ defmodule Jason do
   @type value :: nil | String.t() | number | boolean | [value] | %{String.t() => value}
   @typedoc "A decoded JSON value where map keys can have any type."
   @type decoded :: [decoded] | %{map_key => decoded} | value
+  @typedoc "The types that may be encoded. Only tuples are not included."
+  @type encodable :: decoded | atom
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -143,7 +145,7 @@ defmodule Jason do
       {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
 
   """
-  @spec encode(decoded, [encode_opt]) ::
+  @spec encode(encodable, [encode_opt]) ::
           {:ok, String.t()} | {:error, EncodeError.t() | Exception.t()}
   def encode(input, opts \\ []) do
     case do_encode(input, format_encode_opts(opts)) do
@@ -167,7 +169,7 @@ defmodule Jason do
       ** (Jason.EncodeError) invalid byte 0xFF in <<255>>
 
   """
-  @spec encode!(decoded, [encode_opt]) :: String.t() | no_return
+  @spec encode!(encodable, [encode_opt]) :: String.t() | no_return
   def encode!(input, opts \\ []) do
     case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> IO.iodata_to_binary(result)
@@ -194,7 +196,7 @@ defmodule Jason do
       {:error, %Jason.EncodeError{message: "invalid byte 0xFF in <<255>>"}}
 
   """
-  @spec encode_to_iodata(decoded, [encode_opt]) ::
+  @spec encode_to_iodata(encodable, [encode_opt]) ::
           {:ok, iodata} | {:error, EncodeError.t() | Exception.t()}
   def encode_to_iodata(input, opts \\ []) do
     do_encode(input, format_encode_opts(opts))
@@ -216,7 +218,7 @@ defmodule Jason do
       ** (Jason.EncodeError) invalid byte 0xFF in <<255>>
 
   """
-  @spec encode_to_iodata!(decoded, [encode_opt]) :: iodata | no_return
+  @spec encode_to_iodata!(encodable, [encode_opt]) :: iodata | no_return
   def encode_to_iodata!(input, opts \\ []) do
     case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> result
