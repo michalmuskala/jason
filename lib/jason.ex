@@ -13,7 +13,7 @@ defmodule Jason do
   @type encode_opt :: {:escape, escape} | {:maps, maps} | {:pretty, boolean | Formatter.opts()}
 
   @typedoc "Decoding setting for map keys."
-  @type keys :: :atoms | :atoms! | :strings | :copy | (binary -> term)
+  @type keys :: :atoms | :atoms! | :strings | :copy | (String.t() -> term)
   @typedoc "Decoding setting for strings."
   @type strings :: :reference | :copy
   @typedoc "Decoding setting for floats."
@@ -24,7 +24,7 @@ defmodule Jason do
   @type decode_opt :: {:keys, keys} | {:strings, strings} | {:floats, floats} | {:objects, objects}
 
   @typedoc "A plain JSON value where map keys can only be strings."
-  @type value :: nil | binary | number | boolean | [value] | %{binary => value}
+  @type value :: nil | String.t() | number | boolean | [value] | %{String.t() => value}
   @typedoc "A decoded JSON value where map keys can have any type."
   @type decoded :: [decoded] | %{term => decoded} | value
 
@@ -142,7 +142,7 @@ defmodule Jason do
 
   """
   @spec encode(decoded, [encode_opt]) ::
-          {:ok, binary} | {:error, EncodeError.t() | Exception.t()}
+          {:ok, String.t()} | {:error, EncodeError.t() | Exception.t()}
   def encode(input, opts \\ []) do
     case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> {:ok, IO.iodata_to_binary(result)}
@@ -165,7 +165,7 @@ defmodule Jason do
       ** (Jason.EncodeError) invalid byte 0xFF in <<255>>
 
   """
-  @spec encode!(decoded, [encode_opt]) :: binary | no_return
+  @spec encode!(decoded, [encode_opt]) :: String.t() | no_return
   def encode!(input, opts \\ []) do
     case do_encode(input, format_encode_opts(opts)) do
       {:ok, result} -> IO.iodata_to_binary(result)
