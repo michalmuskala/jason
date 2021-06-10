@@ -14,23 +14,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.4
+          - elixir: 1.4.x
             otp: 18
-          - elixir: 1.5
+          - elixir: 1.5.x
             otp: 18
-          - elixir: 1.6
+          - elixir: 1.6.x
             otp: 19
-          - elixir: 1.7
+          - elixir: 1.7.x
             otp: 19
-          - elixir: 1.8
+          - elixir: 1.8.x
             otp: 20
-          - elixir: 1.9
+          - elixir: 1.9.x
             otp: 20
-          - elixir: 1.10
+          - elixir: 1.10.x
             otp: 21
-          - elixir: 1.11
+          - elixir: 1.11.x
             otp: 22
-          - elixir: 1.11
+          - elixir: 1.11.x
             otp: 23
             warnings_as_errors: true
             static_analysis: true
