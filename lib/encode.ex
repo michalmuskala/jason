@@ -216,14 +216,14 @@ defmodule Jason.Encode do
   # TODO: benchmark the effect of inlining the to_iso8601 functions
   for module <- [Date, Time, NaiveDateTime, DateTime] do
     defp struct(value, _escape, _encode_map, unquote(module)) do
-      [?\", unquote(module).to_iso8601(value), ?\"]
+      [?", unquote(module).to_iso8601(value), ?"]
     end
   end
 
   defp struct(value, _escape, _encode_map, Decimal) do
     # silence the xref warning
     decimal = Decimal
-    [?\", decimal.to_string(value, :normal), ?\"]
+    [?", decimal.to_string(value, :normal), ?"]
   end
 
   defp struct(value, escape, encode_map, Fragment) do
@@ -255,7 +255,7 @@ defmodule Jason.Encode do
   end
 
   defp encode_string(string, escape) do
-    [?\", escape.(string, string, 0), ?\"]
+    [?", escape.(string, string, 0), ?"]
   end
 
   slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')

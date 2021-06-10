@@ -217,7 +217,7 @@ end
 
 defimpl Jason.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
   def encode(value, _opts) do
-    [?\", @for.to_iso8601(value), ?\"]
+    [?", @for.to_iso8601(value), ?"]
   end
 end
 
@@ -225,7 +225,7 @@ defimpl Jason.Encoder, for: Decimal do
   def encode(value, _opts) do
     # silence the xref warning
     decimal = Decimal
-    [?\", decimal.to_string(value), ?\"]
+    [?", decimal.to_string(value), ?"]
   end
 end
 
