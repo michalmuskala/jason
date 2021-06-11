@@ -9,36 +9,36 @@ on:
 jobs:
   mix_test:
     name: mix test (Elixir ${{matrix.elixir}} | OTP ${{matrix.otp}})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
         include:
           - elixir: 1.4.x
-            otp: 18.3.4.11
+            otp: 18
           - elixir: 1.5.x
-            otp: 18.3.4.11
+            otp: 18
           - elixir: 1.6.x
-            otp: 19.3.6.13
+            otp: 19
           - elixir: 1.7.x
-            otp: 19.3.6.13
+            otp: 19
           - elixir: 1.8.x
-            otp: 20.3.8.26
+            otp: 20
           - elixir: 1.9.x
-            otp: 20.3.8.26
+            otp: 20
           - elixir: 1.10.x
-            otp: 21.3.8.18
+            otp: 21
           - elixir: 1.11.x
-            otp: 22.3.4.12
+            otp: 22
           - elixir: 1.11.x
-            otp: 23.1.1
+            otp: 23
             warnings_as_errors: true
             static_analysis: true
     env:
       MIX_ENV: test
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-elixir@v1
+      - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
