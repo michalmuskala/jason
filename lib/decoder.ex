@@ -14,7 +14,7 @@ defmodule Jason.DecodeError do
     str = <<byte>>
     if String.printable?(str) do
       "unexpected byte at position #{position}: " <>
-        "#{inspect byte, base: :hex} ('#{str}')"
+        "#{inspect byte, base: :hex} (#{inspect str})"
     else
       "unexpected byte at position #{position}: " <>
         "#{inspect byte, base: :hex}"
@@ -339,7 +339,7 @@ defmodule Jason.Decoder do
         part = binary_part(original, skip, len)
         escape(rest, original, skip + len, stack, key_decode, string_decode, part)
       _ in unquote(0x00..0x1F), _rest ->
-        error(original, skip)
+        error(original, skip + len)
       _, rest ->
         string(rest, original, skip, stack, key_decode, string_decode, len + 1)
       <<char::utf8, rest::bits>> when char <= 0x7FF ->
@@ -363,7 +363,7 @@ defmodule Jason.Decoder do
         part = binary_part(original, skip, len)
         escape(rest, original, skip + len, stack, key_decode, string_decode, [acc | part])
       _ in unquote(0x00..0x1F), _rest ->
-        error(original, skip)
+        error(original, skip + len)
       _, rest ->
         string(rest, original, skip, stack, key_decode, string_decode, acc, len + 1)
       <<char::utf8, rest::bits>> when char <= 0x7FF ->
