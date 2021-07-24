@@ -68,7 +68,7 @@ defmodule Jason do
       %{}
 
       iex> Jason.decode!("invalid")
-      ** (Jason.DecodeError) unexpected byte at position 0: 0x69 ('i')
+      ** (Jason.DecodeError) unexpected byte at position 0: 0x69 ("i")
 
   """
   @spec decode!(iodata, [decode_opt]) :: term | no_return
