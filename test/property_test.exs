@@ -3,7 +3,7 @@ if Code.ensure_loaded?(ExUnitProperties) do
     use ExUnit.Case, async: true
     use ExUnitProperties
 
-    property "string rountrip" do
+    property "string roundtrip" do
       check all string <- string(:printable) do
         assert decode(encode(string)) == string
       end
