@@ -111,6 +111,23 @@ defmodule Jason.DecodeTest do
     assert parse!(~s({"FOO": "bar"}), keys: &String.downcase/1) == %{"foo" => "bar"}
   end
 
+  test "decoding objects preserving order" do
+    import Jason.OrderedObject, only: [new: 1]
+
+    assert parse!("{}", objects: :preserve_order) == new([])
+    assert parse!(~s({"foo": "bar"}), objects: :preserve_order) == new([{"foo", "bar"}])
+
+    expected = new([{"foo", "bar"}, {"baz", "quux"}])
+    assert parse!(~s({"foo": "bar", "baz": "quux"}), objects: :preserve_order) == expected
+
+    expected = new([{"foo", new([{"bar", "baz"}])}])
+    assert parse!(~s({"foo": {"bar": "baz"}}), objects: :preserve_order) == expected
+
+    # Combining with `keys: :atoms`
+    assert parse!(~s({"foo": "bar"}), keys: :atoms, objects: :preserve_order) == new([foo: "bar"])
+    assert parse!(~s({"foo": "bar"}), keys: :atoms!, objects: :preserve_order) == new([foo: "bar"])
+  end
+
   test "arrays" do
     assert_fail_with "[", ~S|unexpected end of input at position 1|
     assert_fail_with "[,", ~S|unexpected byte at position 1: 0x2C (",")|

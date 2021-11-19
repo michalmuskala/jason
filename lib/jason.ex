@@ -14,7 +14,9 @@ defmodule Jason do
 
   @type strings :: :reference | :copy
 
-  @type decode_opt :: {:keys, keys} | {:strings, strings}
+  @type objects :: :maps | :preserve_order
+
+  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:objects, objects}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -35,6 +37,12 @@ defmodule Jason do
       * `:copy` - always copies the strings. This option is especially useful when parts of the
         decoded data will be stored for a long time (in ets or some process) to avoid keeping
         the reference to the original data.
+
+    * `:objects` - controls how objects are decoded. Possible values are:
+      * `:maps` (default) - objects are decoded as maps
+      * `:preserve_order` - objects are decoded into `Jason.OrderedObject` structs that preserve
+        the order of the keys in the original object. `Jason.OrderedObject` implements the `Access`
+        behaviour and the `Enumerable` protocol.
 
   ## Decoding keys to atoms
 
@@ -223,6 +231,6 @@ defmodule Jason do
   end
 
   defp format_decode_opts(opts) do
-    Enum.into(opts, %{keys: :strings, strings: :reference})
+    Enum.into(opts, %{keys: :strings, strings: :reference, objects: :maps})
   end
 end
