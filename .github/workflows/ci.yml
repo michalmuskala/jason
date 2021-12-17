@@ -33,6 +33,8 @@ jobs:
           - elixir: 1.11.x
             otp: 23
           - elixir: 1.12.x
+            otp: 23
+          - elixir: 1.13.x
             otp: 24
             warnings_as_errors: true
             static_analysis: true
