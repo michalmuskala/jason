@@ -31,6 +31,8 @@ defmodule Jason.Decoder do
 
   import Codegen, only: [bytecase: 2, bytecase: 3]
 
+  @dialyzer :no_improper_lists
+
   # @compile :native
 
   # We use integers instead of atoms to take advantage of the jump table

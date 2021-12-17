@@ -17,6 +17,8 @@ defmodule Jason.Formatter do
   import Record
   defrecordp :opts, [:indent, :line, :record, :colon]
 
+  @dialyzer :no_improper_lists
+
   @doc ~S"""
   Pretty-prints JSON-encoded `input`.
 

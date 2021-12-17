@@ -24,6 +24,8 @@ defmodule Jason.Encode do
   @typep encode_map :: (map, escape, encode_map -> iodata)
   @opaque opts :: {escape, encode_map}
 
+  @dialyzer :no_improper_lists
+
   # @compile :native
 
   @doc false
