@@ -43,13 +43,15 @@ defmodule Jason.Decoder do
   @key       2
   @object    3
 
-  defrecordp :decode, [keys: nil, strings: nil]
+  defrecordp :decode, [keys: nil, strings: nil, floats: nil]
 
   def parse(data, opts) when is_binary(data) do
     key_decode = key_decode_function(opts)
     string_decode = string_decode_function(opts)
+    float_decode = float_decode_function(opts)
+    decode = decode(keys: key_decode, strings: string_decode, floats: float_decode)
     try do
-      value(data, data, 0, [@terminate], decode(keys: key_decode, strings: string_decode))
+      value(data, data, 0, [@terminate], decode)
     catch
       {:position, position} ->
         {:error, %DecodeError{position: position, data: data}}
@@ -68,6 +70,30 @@ defmodule Jason.Decoder do
 
   defp string_decode_function(%{strings: :copy}), do: &:binary.copy/1
   defp string_decode_function(%{strings: :reference}), do: &(&1)
+
+  defp float_decode_function(%{floats: :native}) do
+    fn string, token, skip ->
+      try do
+        :erlang.binary_to_float(string)
+      catch
+        :error, :badarg ->
+          token_error(token, skip)
+      end
+    end
+  end
+
+  defp float_decode_function(%{floats: :decimals}) do
+    fn string, token, skip ->
+      # silence xref warning
+      decimal = Decimal
+      try do
+        decimal.new(string)
+      rescue
+        Decimal.Error ->
+          token_error(token, skip)
+      end
+    end
+  end
 
   defp value(data, original, skip, stack, decode) do
     bytecase data do
@@ -160,7 +186,8 @@ defmodule Jason.Decoder do
   end
   defp number_frac_cont(<<rest::bits>>, original, skip, stack, decode, len) do
     token = binary_part(original, skip, len)
-    float = try_parse_float(token, token, skip)
+    decode(floats: float_decode) = decode
+    float = float_decode.(token, token, skip)
     continue(rest, original, skip + len, stack, decode, float)
   end
 
@@ -190,7 +217,8 @@ defmodule Jason.Decoder do
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, decode, len) do
     token = binary_part(original, skip, len)
-    float = try_parse_float(token, token, skip)
+    decode(floats: float_decode) = decode
+    float = float_decode.(token, token, skip)
     continue(rest, original, skip + len, stack, decode, float)
   end
 
@@ -225,7 +253,8 @@ defmodule Jason.Decoder do
     initial_skip = skip - prefix_size - 1
     final_skip = skip + len
     token = binary_part(original, initial_skip, prefix_size + len + 1)
-    float = try_parse_float(string, token, initial_skip)
+    decode(floats: float_decode) = decode
+    float = float_decode.(string, token, initial_skip)
     continue(rest, original, final_skip, stack, decode, float)
   end
 
@@ -608,13 +637,6 @@ defmodule Jason.Decoder do
   end
   defp escape_surrogate(<<_rest::bits>>, original, skip, _stack, _decode, _acc, _hi) do
     error(original, skip + 6)
-  end
-
-  defp try_parse_float(string, token, skip) do
-    :erlang.binary_to_float(string)
-  catch
-    :error, :badarg ->
-      token_error(token, skip)
   end
 
   defp error(<<_rest::bits>>, _original, skip, _stack, _decode) do
