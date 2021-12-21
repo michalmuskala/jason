@@ -112,6 +112,23 @@ defmodule Jason.DecodeTest do
     assert parse!(~s({"FOO": "bar"}), keys: &String.downcase/1) == %{"foo" => "bar"}
   end
 
+  test "decoding objects preserving order" do
+    import Jason.OrderedObject, only: [new: 1]
+
+    assert parse!("{}", objects: :ordered_objects) == new([])
+    assert parse!(~s({"foo": "bar"}), objects: :ordered_objects) == new([{"foo", "bar"}])
+
+    expected = new([{"foo", "bar"}, {"baz", "quux"}])
+    assert parse!(~s({"foo": "bar", "baz": "quux"}), objects: :ordered_objects) == expected
+
+    expected = new([{"foo", new([{"bar", "baz"}])}])
+    assert parse!(~s({"foo": {"bar": "baz"}}), objects: :ordered_objects) == expected
+
+    # Combining with `keys: :atoms`
+    assert parse!(~s({"foo": "bar"}), keys: :atoms, objects: :ordered_objects) == new([foo: "bar"])
+    assert parse!(~s({"foo": "bar"}), keys: :atoms!, objects: :ordered_objects) == new([foo: "bar"])
+  end
+
   test "parsing floats to decimals" do
     assert parse!("0.1", floats: :decimals) == Decimal.new("0.1")
     assert parse!("-0.1", floats: :decimals) == Decimal.new("-0.1")

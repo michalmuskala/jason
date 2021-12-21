@@ -43,13 +43,14 @@ defmodule Jason.Decoder do
   @key       2
   @object    3
 
-  defrecordp :decode, [keys: nil, strings: nil, floats: nil]
+  defrecordp :decode, [keys: nil, strings: nil, objects: nil, floats: nil]
 
   def parse(data, opts) when is_binary(data) do
     key_decode = key_decode_function(opts)
     string_decode = string_decode_function(opts)
     float_decode = float_decode_function(opts)
-    decode = decode(keys: key_decode, strings: string_decode, floats: float_decode)
+    object_decode = object_decode_function(opts)
+    decode = decode(keys: key_decode, strings: string_decode, objects: object_decode, floats: float_decode)
     try do
       value(data, data, 0, [@terminate], decode)
     catch
@@ -70,6 +71,9 @@ defmodule Jason.Decoder do
 
   defp string_decode_function(%{strings: :copy}), do: &:binary.copy/1
   defp string_decode_function(%{strings: :reference}), do: &(&1)
+
+  defp object_decode_function(%{objects: :maps}), do: &:maps.from_list/1
+  defp object_decode_function(%{objects: :ordered_objects}), do: &Jason.OrderedObject.new(:lists.reverse(&1))
 
   defp float_decode_function(%{floats: :native}) do
     fn string, token, skip ->
@@ -316,7 +320,8 @@ defmodule Jason.Decoder do
         [key, acc | stack] = stack
         decode(keys: key_decode) = decode
         final = [{key_decode.(key), value} | acc]
-        continue(rest, original, skip, stack, decode, :maps.from_list(final))
+        decode(objects: object_decode) = decode
+        continue(rest, original, skip, stack, decode, object_decode.(final))
       _ in ',', rest ->
         skip = skip + 1
         [key, acc | stack] = stack
@@ -337,7 +342,8 @@ defmodule Jason.Decoder do
       _ in '}', rest ->
         case stack do
           [[] | stack] ->
-            continue(rest, original, skip + 1, stack, decode, %{})
+            decode(objects: object_decode) = decode
+            continue(rest, original, skip + 1, stack, decode, object_decode.([]))
           _ ->
             error(original, skip)
         end

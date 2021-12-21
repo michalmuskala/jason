@@ -98,6 +98,23 @@ defmodule Jason.EncoderTest do
     assert to_json(decimal) == ~s("1.0")
   end
 
+  test "OrderedObject" do
+    import Jason.OrderedObject, only: [new: 1]
+
+    assert to_json(new([])) == "{}"
+    assert to_json(new([{"foo", "bar"}]))  == ~s({"foo":"bar"})
+    assert to_json(new([foo: :bar])) == ~s({"foo":"bar"})
+    assert to_json(new([{42, :bar}])) == ~s({"42":"bar"})
+    assert to_json(new([{'foo', :bar}])) == ~s({"foo":"bar"})
+
+    multi_key_map = new([{"foo", "foo1"}, {:foo, "foo2"}])
+    assert_raise EncodeError, "duplicate key: foo", fn ->
+      to_json(multi_key_map, maps: :strict)
+    end
+
+    assert to_json(multi_key_map) == ~s({"foo":"foo1","foo":"foo2"})
+  end
+
   defmodule Derived do
     @derive Encoder
     defstruct name: ""

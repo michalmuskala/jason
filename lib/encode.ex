@@ -18,7 +18,7 @@ defmodule Jason.Encode do
 
   import Bitwise
 
-  alias Jason.{Codegen, EncodeError, Encoder, Fragment}
+  alias Jason.{Codegen, EncodeError, Encoder, Fragment, OrderedObject}
 
   @typep escape :: (String.t, String.t, integer -> iodata)
   @typep encode_map :: (map, escape, encode_map -> iodata)
@@ -231,6 +231,13 @@ defmodule Jason.Encode do
   defp struct(value, escape, encode_map, Fragment) do
     %{encode: encode} = value
     encode.({escape, encode_map})
+  end
+
+  defp struct(value, escape, encode_map, OrderedObject) do
+    case value do
+      %{values: []} -> "{}"
+      %{values: values} -> encode_map.(values, escape, encode_map)
+    end
   end
 
   defp struct(value, escape, encode_map, _module) do

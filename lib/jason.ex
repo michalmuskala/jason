@@ -16,7 +16,9 @@ defmodule Jason do
 
   @type floats :: :native | :decimals
 
-  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:floats, floats}
+  @type objects :: :maps | :ordered_objects
+
+  @type decode_opt :: {:keys, keys} | {:strings, strings} | {:floats, floats} | {:objects, objects}
 
   @doc """
   Parses a JSON value from `input` iodata.
@@ -42,6 +44,11 @@ defmodule Jason do
 
       * `:native` (default) - Native conversion from binary to float using `:erlang.binary_to_float/1`,
       * `:decimals` - uses `Decimal.new/1` to parse the binary into a Decimal struct with arbitrary precision.
+
+    * `:objects` - controls how objects are decoded. Possible values are:
+
+      * `:maps` (default) - objects are decoded as maps
+      * `:ordered_objects` - objects are decoded as `Jason.OrderedObject` structs
 
   ## Decoding keys to atoms
 
@@ -230,6 +237,6 @@ defmodule Jason do
   end
 
   defp format_decode_opts(opts) do
-    Enum.into(opts, %{keys: :strings, strings: :reference, floats: :native})
+    Enum.into(opts, %{keys: :strings, strings: :reference, floats: :native, objects: :maps})
   end
 end
