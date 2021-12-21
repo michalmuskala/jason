@@ -37,12 +37,21 @@ end
 
 inputs = for name <- decode_inputs, into: %{}, do: {name, read_data.(name)}
 
+IO.puts("Checking jobs don't crash")
+for {name, input} <- inputs, {job, decode_job} <- decode_jobs do
+  IO.puts("Testing #{job} #{name}")
+  decode_job.(input)
+end
+IO.puts("\n")
+
 Benchee.run(decode_jobs,
 #  parallel: 4,
   warmup: 5,
   time: 30,
   memory_time: 1,
   inputs: inputs,
+  save: %{path: "output/runs/#{DateTime.utc_now()}.benchee"},
+  load: "output/runs/*.benchee",
   formatters: [
     {Benchee.Formatters.HTML, file: Path.expand("output/decode.html", __DIR__)},
     Benchee.Formatters.Console,
