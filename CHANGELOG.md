@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 (21.12.2020)
+
+### Enhancements
+
+* Add the `Jason.OrderedObject` struct
+* Support decoding objects preserving all the keys with `objects: :ordered_objects` option
+* Support decoding floats to `Decimal` with `floats: :decimals` option
+* Add `~j` and `~J` sigils in module `Jason.Sigil` to support writing JSON literals in code
+
+### Fixes
+* Fix error reporting when decoding strings (it was possible to mis-attribute the offending byte)
+* Verify fields given to `@derive`
+
 ## 1.2.2 (08.09.2020)
 
 ### Enhancements
