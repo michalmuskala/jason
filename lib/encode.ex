@@ -127,9 +127,23 @@ defmodule Jason.Encode do
     Integer.to_string(integer)
   end
 
+  has_short_format = try do
+    :erlang.float_to_binary(1.0, [:short])
+  catch
+    _, _ -> false
+  else
+    _ -> true
+  end
+
   @spec float(float) :: iodata
-  def float(float) do
-    :io_lib_format.fwrite_g(float)
+  if has_short_format do
+    def float(float) do
+      :erlang.float_to_binary(float, [:short])
+    end
+  else
+    def float(float) do
+      :io_lib_format.fwrite_g(float)
+   end
   end
 
   @spec list(list, opts) :: iodata
