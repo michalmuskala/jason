@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 (12.09.2022)
+
+### Enhancements
+
+* Use the `:erlang.float_to_binary(_, [:short])` function, instead of `io_lib_format.fwrite_g/1`
+  where available (OTP 24.1+). This provides equivalent output with much less memory used
+  and significantly improved performance.
+
 ## 1.3.0 (21.12.2021)
 
 ### Enhancements
