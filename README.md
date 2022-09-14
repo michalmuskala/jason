@@ -96,6 +96,8 @@ Jason has a couple feature differences compared to Poison.
     of the `Jason.Encoder` protocol is always required.
   * different pretty-printing customisation options (default `pretty: true` works the same)
 
+### Encoders
+
 If you require encoders for any of the unsupported collection types, I suggest
 adding the needed implementations directly to your project:
 
