@@ -7,37 +7,49 @@ on:
       - master
 
 jobs:
-  mix_test:
+  mix_test_old:
     name: mix test (Elixir ${{matrix.elixir}} | OTP ${{matrix.otp}})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - elixir: 1.4.x
             otp: 18
+            os: ubuntu-18.04
           - elixir: 1.5.x
             otp: 18
+            os: ubuntu-18.04
           - elixir: 1.6.x
             otp: 19
+            os: ubuntu-18.04
           - elixir: 1.7.x
             otp: 19
+            os: ubuntu-18.04
           - elixir: 1.8.x
             otp: 20
+            os: ubuntu-20.04
           - elixir: 1.9.x
             otp: 20
+            os: ubuntu-20.04
           - elixir: 1.10.x
             otp: 21
+            os: ubuntu-20.04
           - elixir: 1.11.x
             otp: 22
+            os: ubuntu-20.04
           - elixir: 1.11.x
             otp: 23
+            os: ubuntu-20.04
           - elixir: 1.12.x
             otp: 23
+            os: ubuntu-20.04
           - elixir: 1.13.x
             otp: 24
+            os: ubuntu-20.04
           - elixir: 1.14.x
             otp: 25
+            os: ubuntu-latest
             warnings_as_errors: true
     env:
       MIX_ENV: test
