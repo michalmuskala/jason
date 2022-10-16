@@ -30,9 +30,16 @@ defmodule Jason.Mixfile do
     [
       {:decimal, "~> 1.0 or ~> 2.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:jason_native, ">= 0.0.0", optional: true}
-    ] ++ maybe_stream_data()
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ] ++ maybe_jason_native() ++ maybe_stream_data()
+  end
+
+  defp maybe_jason_native() do
+    if System.get_env("NO_JASON_NATIVE") do
+      []
+    else
+      [{:jason_native, ">= 0.0.0", optional: true}]
+    end
   end
 
   defp maybe_stream_data() do
