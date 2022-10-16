@@ -23,6 +23,7 @@ defmodule JasonBench.MixProject do
   defp deps do
     [
       {:jason, "~> 1.0", path: "../", override: true},
+      {:jason_native, ">= 0.0.0", path: "../../jason_native"},
       {:benchee, "~> 1.0"},
       {:benchee_html, "~> 1.0"},
       {:poison, "~> 5.0"},

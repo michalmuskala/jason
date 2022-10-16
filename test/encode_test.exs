@@ -201,11 +201,19 @@ defmodule Jason.EncoderTest do
     end
 
     assert_raise EncodeError, "invalid byte 0x80 in <<128>>", fn ->
-      assert to_json(<<0x80>>)
+      assert to_json(<<0x80>>, escape: :native_json)
+    end
+
+    assert_raise EncodeError, "invalid byte 0x80 in <<128>>", fn ->
+      assert to_json(<<0x80>>, escape: :elixir_json)
     end
 
     assert_raise EncodeError, fn ->
-      assert to_json(<<?a, 208>>)
+      assert to_json(<<?a, 208>>, escape: :native_json)
+    end
+
+    assert_raise EncodeError, fn ->
+      assert to_json(<<?a, 208>>, escape: :elixir_json)
     end
   end
 
@@ -221,8 +229,14 @@ defmodule Jason.EncoderTest do
     assert to_json(%{a: 3.14159, b: 1}, pretty: false) == ~s|{"a":3.14159,"b":1}|
   end
 
-  defp to_json(value, opts \\ []) do
-    Jason.encode!(value, opts)
+  defp to_json(value) do
+    native = Jason.encode!(value, escape: :native_json)
+    elixir = Jason.encode!(value, escape: :elixir_json)
+    assert native == elixir
+    native
   end
 
+  defp to_json(value, opts) do
+    Jason.encode!(value, opts)
+  end
 end
