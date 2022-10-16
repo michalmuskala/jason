@@ -5,6 +5,7 @@
   "deep_merge": {:hex, :deep_merge, "1.0.0", "b4aa1a0d1acac393bdf38b2291af38cb1d4a52806cf7a4906f718e1feb5ee961", [:mix], [], "hexpm", "ce708e5f094b9cd4e8f2be4f00d2f4250c4095be93f8cd6d018c753894885430"},
   "elixir_make": {:hex, :elixir_make, "0.6.3", "bc07d53221216838d79e03a8019d0839786703129599e9619f4ab74c8c096eac", [:mix], [], "hexpm", "f5cbd651c5678bcaabdbb7857658ee106b12509cd976c2c2fca99688e1daf716"},
   "exjsx": {:hex, :exjsx, "4.0.0", "60548841e0212df401e38e63c0078ec57b33e7ea49b032c796ccad8cde794b5c", [:mix], [{:jsx, "~> 2.8.0", [hex: :jsx, repo: "hexpm", optional: false]}], "hexpm", "32e95820a97cffea67830e91514a2ad53b888850442d6d395f53a1ac60c82e07"},
+  "jason_native": {:hex, :jason_native, "0.1.0", "03003746213ba6da181ad9e488461969aaa6b212a48e9a57ce74ada4c71cbc1f", [:make, :mix], [{:elixir_make, "~> 0.6", [hex: :elixir_make, repo: "hexpm", optional: false]}], "hexpm", "6dd4c067da7d9296425604968536f91927dbb3fa538131cdef19ad2a3a0d1ee1"},
   "jiffy": {:hex, :jiffy, "1.1.1", "aca10f47aa91697bf24ab9582c74e00e8e95474c7ef9f76d4f1a338d0f5de21b", [:rebar3], [], "hexpm", "62e1f0581c3c19c33a725c781dfa88410d8bff1bbafc3885a2552286b4785c4c"},
   "json": {:hex, :json, "1.4.1", "8648f04a9439765ad449bc56a3ff7d8b11dd44ff08ffcdefc4329f7c93843dfa", [:mix], [], "hexpm", "9abf218dbe4ea4fcb875e087d5f904ef263d012ee5ed21d46e9dbca63f053d16"},
   "jsone": {:hex, :jsone, "1.7.0", "1e3bd7d5dd44bb2eb0797dddea1cbf2ddab8d9f29e499a467ca171c23f5984ea", [:rebar3], [], "hexpm", "a3a33712ee6bc8be10cfa21c7c425a299de4c5a8533f9f931e577a6d0e8f5dbd"},

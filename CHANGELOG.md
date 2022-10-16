@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0-alpha.1 (16.10.2022)
+
+### Enhancements
+
+* Add optional dependency for [`jason_native`](https://github.com/spawnfest/json_native).
+  Please refer to the repo for usage instructions
+
 ## 1.4.0 (12.09.2022)
 
 ### Enhancements
