@@ -59,10 +59,6 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-      - name: Sets env vars to disable jason_native on ubuntu-18.4
-        run: |
-          echo "NO_JASON_NATIVE=1" >> $GITHUB_ENV
-        if: ${{runner.name}} == 'ubuntu-18.04'
       - name: Install Dependencies
         run: |
           mix local.hex --force
@@ -78,7 +74,13 @@ jobs:
           key: ${{ matrix.otp }}-${{ matrix.elixir }}-build
       - run: mix compile --warnings-as-errors
         if: matrix.warnings_as_errors
+        env:
+          CC: gcc-10
+          CXX: g++-10
       - run: mix test
+        env:
+          CC: gcc-10
+          CXX: g++-10
   dialyzer:
     name: mix dialyzer
     runs-on: ubuntu-latest
