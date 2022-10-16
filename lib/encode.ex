@@ -20,7 +20,7 @@ defmodule Jason.Encode do
 
   alias Jason.{Codegen, EncodeError, Encoder, Fragment, OrderedObject}
 
-  @typep escape :: (String.t, String.t, integer -> iodata)
+  @typep escape :: (String.t -> iodata)
   @typep encode_map :: (map, escape, encode_map -> iodata)
   @opaque opts :: {escape, encode_map}
 
@@ -139,8 +139,16 @@ defmodule Jason.Encode do
   defp encode_atom(nil, _escape), do: "null"
   defp encode_atom(true, _escape), do: "true"
   defp encode_atom(false, _escape), do: "false"
-  defp encode_atom(atom, escape),
-    do: encode_string(Atom.to_string(atom), escape)
+  defp encode_atom(atom, escape) do
+    [?", :ets.lookup_element(Jason, atom, 2), ?"]
+  catch
+    :error, :badarg ->
+      encoded = escape.(Atom.to_string(atom))
+      :ets.insert_new(Jason, {atom, encoded})
+      [?", encoded, ?"]
+  end
+  # defp encode_atom(atom, escape),
+  #   do: encode_string(Atom.to_string(atom), escape)
 
   @spec integer(integer) :: iodata
   def integer(integer) do
@@ -284,8 +292,12 @@ defmodule Jason.Encode do
     escape.(string)
   end
   def key(atom, escape) when is_atom(atom) do
-    string = Atom.to_string(atom)
-    escape.(string)
+    :ets.lookup_element(Jason, atom, 2)
+  catch
+    :error, :badarg ->
+      encoded = IO.iodata_to_binary(escape.(Atom.to_string(atom)))
+      :ets.insert_new(Jason, {atom, encoded})
+      encoded
   end
   def key(other, escape) do
     string = String.Chars.to_string(other)

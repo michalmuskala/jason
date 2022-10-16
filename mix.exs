@@ -22,7 +22,8 @@ defmodule Jason.Mixfile do
 
   def application() do
     [
-      extra_applications: []
+      extra_applications: [],
+      mod: {Jason.App, []}
     ]
   end
 
