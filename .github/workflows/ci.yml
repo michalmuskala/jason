@@ -59,6 +59,10 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
+      - name: Sets env vars to disable jason_native on ubuntu-18.4
+        run: |
+          echo "NO_JASON_NATIVE=1" >> $GITHUB_ENV
+        if: ${{runner.name}} == 'ubuntu-18.04'
       - name: Install Dependencies
         run: |
           mix local.hex --force
