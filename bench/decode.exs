@@ -20,6 +20,7 @@ decode_inputs = [
   "UTF-8 escaped",
   "UTF-8 unescaped",
   "Issue 90",
+  "Small",
 ]
 
 read_data = fn (name) ->
