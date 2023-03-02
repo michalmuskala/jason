@@ -46,11 +46,11 @@ defmodule Jason.Decoder do
   defrecordp :decode, [keys: nil, strings: nil, objects: nil, floats: nil]
 
   def parse(data, opts) when is_binary(data) do
-    key_decode = key_decode_function(opts)
-    string_decode = string_decode_function(opts)
-    float_decode = float_decode_function(opts)
-    object_decode = object_decode_function(opts)
-    decode = decode(keys: key_decode, strings: string_decode, objects: object_decode, floats: float_decode)
+    key_spec = key_decode_spec(opts)
+    string_spec = string_decode_spec(opts)
+    float_spec = float_decode_spec(opts)
+    object_spec = object_decode_spec(opts)
+    decode = decode(keys: key_spec, strings: string_spec, objects: object_spec, floats: float_spec)
     try do
       value(data, data, 0, [@terminate], decode)
     catch
@@ -64,38 +64,55 @@ defmodule Jason.Decoder do
     end
   end
 
-  defp key_decode_function(%{keys: :atoms}), do: &String.to_atom/1
-  defp key_decode_function(%{keys: :atoms!}), do: &String.to_existing_atom/1
-  defp key_decode_function(%{keys: :strings}), do: &(&1)
-  defp key_decode_function(%{keys: fun}) when is_function(fun, 1), do: fun
+  defp key_decode_spec(%{keys: spec}) when spec in [:atoms, :atoms!, :strings] or is_function(spec, 1),
+       do: spec
 
-  defp string_decode_function(%{strings: :copy}), do: &:binary.copy/1
-  defp string_decode_function(%{strings: :reference}), do: &(&1)
+  @compile {:inline, key_decode: 2}
 
-  defp object_decode_function(%{objects: :maps}), do: &:maps.from_list/1
-  defp object_decode_function(%{objects: :ordered_objects}), do: &Jason.OrderedObject.new(:lists.reverse(&1))
+  defp key_decode(:atoms, key), do: String.to_atom(key)
+  defp key_decode(:atoms!, key), do: String.to_existing_atom(key)
+  defp key_decode(:strings, key), do: key
+  defp key_decode(fun, key) when is_function(fun, 1), do: fun.(key)
 
-  defp float_decode_function(%{floats: :native}) do
-    fn string, token, skip ->
-      try do
-        :erlang.binary_to_float(string)
-      catch
-        :error, :badarg ->
-          token_error(token, skip)
-      end
+  defp string_decode_spec(%{strings: spec}) when spec in [:copy, :reference], do: spec
+
+  @compile {:inline, string_decode: 2}
+
+  defp string_decode(:copy, string), do: :binary.copy(string)
+  defp string_decode(:reference, string), do: string
+
+  defp object_decode_spec(%{objects: objects}) when objects in [:ordered_objects, :maps],
+    do: objects
+
+  @compile {:inline, object_decode: 2}
+
+  defp object_decode(:maps, object), do: :maps.from_list(object)
+
+  defp object_decode(:ordered_objects, object),
+    do: Jason.OrderedObject.new(:lists.reverse(object))
+
+  defp float_decode_spec(%{floats: spec}) when spec in [:native, :decimals], do: spec
+
+  @compile {:inline, float_decode: 4}
+
+  defp float_decode(:native, string, token, skip) do
+    try do
+      :erlang.binary_to_float(string)
+    catch
+      :error, :badarg ->
+        token_error(token, skip)
     end
   end
 
-  defp float_decode_function(%{floats: :decimals}) do
-    fn string, token, skip ->
-      # silence xref warning
-      decimal = Decimal
-      try do
-        decimal.new(string)
-      rescue
-        Decimal.Error ->
-          token_error(token, skip)
-      end
+  defp float_decode(:decimals, string, token, skip) do
+    # silence xref warning
+    decimal = Decimal
+
+    try do
+      decimal.new(string)
+    rescue
+      Decimal.Error ->
+        token_error(token, skip)
     end
   end
 
@@ -190,8 +207,8 @@ defmodule Jason.Decoder do
   end
   defp number_frac_cont(<<rest::bits>>, original, skip, stack, decode, len) do
     token = binary_part(original, skip, len)
-    decode(floats: float_decode) = decode
-    float = float_decode.(token, token, skip)
+    decode(floats: float_spec) = decode
+    float = float_decode(float_spec, token, token, skip)
     continue(rest, original, skip + len, stack, decode, float)
   end
 
@@ -221,8 +238,8 @@ defmodule Jason.Decoder do
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, decode, len) do
     token = binary_part(original, skip, len)
-    decode(floats: float_decode) = decode
-    float = float_decode.(token, token, skip)
+    decode(floats: float_spec) = decode
+    float = float_decode(float_spec, token, token, skip)
     continue(rest, original, skip + len, stack, decode, float)
   end
 
@@ -257,8 +274,8 @@ defmodule Jason.Decoder do
     initial_skip = skip - prefix_size - 1
     final_skip = skip + len
     token = binary_part(original, initial_skip, prefix_size + len + 1)
-    decode(floats: float_decode) = decode
-    float = float_decode.(string, token, initial_skip)
+    decode(floats: float_spec) = decode
+    float = float_decode(float_spec, string, token, initial_skip)
     continue(rest, original, final_skip, stack, decode, float)
   end
 
@@ -318,15 +335,16 @@ defmodule Jason.Decoder do
       _ in '}', rest ->
         skip = skip + 1
         [key, acc | stack] = stack
-        decode(keys: key_decode) = decode
-        final = [{key_decode.(key), value} | acc]
-        decode(objects: object_decode) = decode
-        continue(rest, original, skip, stack, decode, object_decode.(final))
+        decode(keys: key_spec) = decode
+        final = [{key_decode(key_spec, key), value} | acc]
+        decode(objects: object_spec) = decode
+        continue(rest, original, skip, stack, decode, object_decode(object_spec, final))
+
       _ in ',', rest ->
         skip = skip + 1
         [key, acc | stack] = stack
-        decode(keys: key_decode) = decode
-        acc = [{key_decode.(key), value} | acc]
+        decode(keys: key_spec) = decode
+        acc = [{key_decode(key_spec, key), value} | acc]
         key(rest, original, skip, [acc | stack], decode)
       _, _rest ->
         error(original, skip)
@@ -342,8 +360,8 @@ defmodule Jason.Decoder do
       _ in '}', rest ->
         case stack do
           [[] | stack] ->
-            decode(objects: object_decode) = decode
-            continue(rest, original, skip + 1, stack, decode, object_decode.([]))
+            decode(objects: object_spec) = decode
+            continue(rest, original, skip + 1, stack, decode, object_decode(object_spec, []))
           _ ->
             error(original, skip)
         end
@@ -375,8 +393,8 @@ defmodule Jason.Decoder do
   defp string(data, original, skip, stack, decode, len) do
     bytecase data, 128 do
       _ in '"', rest ->
-        decode(strings: string_decode) = decode
-        string = string_decode.(binary_part(original, skip, len))
+        decode(strings: string_spec) = decode
+        string = string_decode(string_spec, binary_part(original, skip, len))
         continue(rest, original, skip + len + 1, stack, decode, string)
       _ in '\\', rest ->
         part = binary_part(original, skip, len)
