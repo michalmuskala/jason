@@ -70,6 +70,35 @@ defmodule Jason.Sigil do
     Macro.escape(Jason.decode!(string, mods_to_opts(modifiers)))
   end
 
+  @doc ~S"""
+  Handles the sigil `~e` to encode to JSON.
+
+  ## Examples
+
+      iex> ~e|%{hello: :hi}|
+      "\{\"hello\":\"hi\"}"
+  """
+  defmacro sigil_e({:<<>>, _meta, [string]}, _modifiers) when is_binary(string) do
+    quote do
+      Jason.encode!(unquote(Code.string_to_quoted!(string)))
+    end
+  end
+
+
+  @doc ~S"""
+  Handles the sigil `~E` to encode to JSON while supporting interpolation.
+
+  ## Examples
+
+      iex> ~E|%{hello: "#{:hi}"}|
+      "\{\"hello\":\"hi\"}"
+  """
+  defmacro sigil_E({:<<>>, _meta, [string]}, _modifiers) when is_binary(string) do
+    quote do
+      Jason.encode!(unquote(Code.string_to_quoted!(string)))
+    end
+  end
+
   @spec mods_to_opts(charlist) :: [Jason.decode_opt()]
   defp mods_to_opts(modifiers) do
     modifiers
