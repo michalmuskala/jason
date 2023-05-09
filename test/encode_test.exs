@@ -115,6 +115,11 @@ defmodule Jason.EncoderTest do
     assert to_json(multi_key_map) == ~s({"foo":"foo1","foo":"foo2"})
   end
 
+  test "Fragment" do
+    pre_encoded_json = Jason.encode!(%{hello: "world", test: 123})
+    assert to_json(%{foo: Jason.Fragment.new(pre_encoded_json)}) == ~s({"foo":{"hello":"world","test":123}})
+  end
+
   defmodule Derived do
     @derive Encoder
     defstruct name: ""
