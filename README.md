@@ -135,6 +135,20 @@ Protocol.derive(Jason.Encoder, NameOfTheStruct, only: [...])
 Protocol.derive(Jason.Encoder, NameOfTheStruct)
 ```
 
+## Injecting an already encoded JSON inside a to-be-encoded structure
+
+If parts of the to-be-encoded structure are already JSON-encoded, you can
+use `Jason.Fragment` to mark the parts as already encoded, and avoid a
+decoding/encoding roundtrip.
+
+```elixir
+already_encoded_json = Jason.encode!(%{hello: "world"})
+Jason.encode!(%{foo: Jason.Fragment.new(already_encoded_json)})
+````
+
+This feature is especially useful if you need to cache a part of the JSON,
+or if it is already provided by another system (e.g. `jsonb_agg` with Postgres).
+
 ## License
 
 Jason is released under the Apache License 2.0 - see the [LICENSE](LICENSE) file.
