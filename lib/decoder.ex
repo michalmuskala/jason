@@ -156,6 +156,13 @@ defmodule Jason.Decoder do
     error(original, skip + 1)
   end
 
+  if function_exported?(Application, :compile_env, 3) do
+    @integer_digit_limit Application.compile_env(:jason, :decoding_integer_digit_limit, 1024)
+  else
+    # use apply to avoid warnings in newer Elixir versions
+    @integer_digit_limit apply(Application, :get_env, [:jason, :decoding_integer_digit_limit, 1024])
+  end
+
   defp number(<<byte, rest::bits>>, original, skip, stack, decode, len)
        when byte in '0123456789' do
     number(rest, original, skip, stack, decode, len + 1)
@@ -168,7 +175,11 @@ defmodule Jason.Decoder do
     number_exp_copy(rest, original, skip + len + 1, stack, decode, prefix)
   end
   defp number(<<rest::bits>>, original, skip, stack, decode, len) do
-    int = String.to_integer(binary_part(original, skip, len))
+    token = binary_part(original, skip, len)
+    if byte_size(token) > @integer_digit_limit do
+      token_error(token, skip)
+    end
+    int = String.to_integer(token)
     continue(rest, original, skip + len, stack, decode, int)
   end
 

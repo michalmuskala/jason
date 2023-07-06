@@ -171,6 +171,11 @@ defmodule Jason.DecodeTest do
     assert parse!(body) == expected
   end
 
+  test "large integers" do
+    massive_integer = String.duplicate("1", 2_000)
+    assert_fail_with(massive_integer, "unexpected sequence at position 0: #{inspect massive_integer}")
+  end
+
   defp parse!(json, opts \\ []) do
     Jason.decode!(json, opts)
   end
