@@ -1,7 +1,7 @@
 defmodule Jason.HelpersTest do
   use ExUnit.Case, async: true
 
-  alias Jason.{Helpers, Fragment, EncodeError}
+  alias Jason.{OrderedObject, Helpers, Fragment, EncodeError}
   import Helpers
 
   doctest Helpers
@@ -17,7 +17,7 @@ defmodule Jason.HelpersTest do
 
     test "produces same output as regular encoding" do
       assert %Fragment{} = helper = json_map(bar: 2, baz: 3, foo: 1)
-      assert Jason.encode!(helper) == Jason.encode!(%{bar: 2, baz: 3, foo: 1})
+      assert Jason.encode!(helper) == Jason.encode!(OrderedObject.new(bar: 2, baz: 3, foo: 1))
     end
 
     test "rejects keys with invalid characters" do
