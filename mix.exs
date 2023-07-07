@@ -2,7 +2,7 @@ defmodule Jason.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/michalmuskala/jason"
-  @version "1.5.0-alpha.1"
+  @version "1.5.0-alpha.2"
 
   def project() do
     [
