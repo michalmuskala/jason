@@ -117,7 +117,7 @@ defmodule Jason.EncoderTest do
 
   test "Fragment" do
     pre_encoded_json = Jason.encode!(%{hello: "world", test: 123})
-    assert to_json(%{foo: Jason.Fragment.new(pre_encoded_json)}) == ~s({"foo":{"hello":"world","test":123}})
+    assert to_json(%{foo: Jason.Fragment.new(pre_encoded_json)}) == ~s({"foo":#{pre_encoded_json}})
   end
 
   defmodule Derived do
@@ -190,7 +190,7 @@ defmodule Jason.EncoderTest do
     def encode(struct, opts) do
       struct
       |> Map.from_struct
-      |> Enum.map(&(&1))
+      |> Enum.sort_by(&elem(&1, 0))
       |> Jason.Encode.keyword(opts)
     end
   end
