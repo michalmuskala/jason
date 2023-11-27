@@ -143,6 +143,9 @@ defmodule Jason.Encode do
   def atom(atom, {escape, _encode_map}) do
     encode_atom(atom, escape)
   end
+  def atom(atom, {escape, _encode_map, _user_opts}) do 
+    encode_atom(atom, escape)
+  end
 
   defp encode_atom(nil, _escape), do: "null"
   defp encode_atom(true, _escape), do: "true"
@@ -323,7 +326,9 @@ defmodule Jason.Encode do
   def string(string, {escape, _encode_map}) do
     encode_string(string, escape)
   end
-
+  def string(string, {escape, _encode_map,_user_opts}) do
+    encode_string(string, escape)
+  end
   defp encode_string(string, escape) do
     [?", escape.(string), ?"]
   end
