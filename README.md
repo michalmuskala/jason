@@ -1,4 +1,4 @@
-# Jason
+# Jason [![Hex Version](https://img.shields.io/hexpm/v/jason.svg)](https://hex.pm/packages/jason) [![Hex Docs](https://img.shields.io/badge/docs-hexpm-blue.svg)](https://hexdocs.pm/jason/)
 
 A blazing fast JSON parser and generator in pure Elixir.
 
