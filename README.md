@@ -33,6 +33,33 @@ iex(2)> Jason.decode!(~s({"age":44,"name":"Steve Irwin","nationality":"Australia
 %{"age" => 44, "name" => "Steve Irwin", "nationality" => "Australian"}
 ```
 
+## User Options 
+In some cases you may want to change encoding based on options such as Permissions, Output Format, etc.
+You may use user settings to support this use case
+
+``` elixir
+  defmodule Custom do
+    defstruct [
+      foo: nil,
+      bar: nil
+    ]
+
+    defimpl Jason.Encoder do
+      def encode(s, {_,_,user_opts} = opts) do
+        unless user_opts[:compact] do
+          %{foo: s.foo, bar: s.bar} |> Jason.Encode.map(opts)
+        else
+          %{foo: s.foo} |> Jason.Encode.map(opts)
+        end
+      end
+    end
+  end
+  
+iex(1)> Jason.encode!(%Custom{foo: "abba", bar: "babba"}, user: [compact: true])
+"{\"foo\":\"abba\"}"
+ 
+```
+
 Full documentation can be found at [https://hexdocs.pm/jason](https://hexdocs.pm/jason).
 
 ## Use with other libraries

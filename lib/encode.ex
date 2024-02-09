@@ -31,10 +31,11 @@ defmodule Jason.Encode do
   @doc false
   @spec encode(any, map) :: {:ok, iodata} | {:error, EncodeError.t | Exception.t}
   def encode(value, opts) do
+    user_opts = user_options(opts)
     escape = escape_function(opts)
     encode_map = encode_map_function(opts)
     try do
-      {:ok, value(value, escape, encode_map)}
+      {:ok, value(value, escape, encode_map, user_opts)}
     catch
       :throw, %EncodeError{} = e ->
         {:error, e}
@@ -47,10 +48,14 @@ defmodule Jason.Encode do
 
   defp encode_map_function(%{maps: maps}) do
     case maps do
-      :naive -> &map_naive/3
-      :strict -> &map_strict/3
+      :naive -> &map_naive/4
+      :strict -> &map_strict/4
     end
   end
+
+  defp user_options(%{user: nil}), do: nil
+  defp user_options(%{user: user}), do: user
+  defp user_options(_), do: nil
 
   if Code.ensure_loaded?(Jason.Native) do
     defp escape_function(%{escape: escape}) do
@@ -91,48 +96,54 @@ defmodule Jason.Encode do
   def value(value, {escape, encode_map}) do
     value(value, escape, encode_map)
   end
+  def value(value, {escape, encode_map, user_opts}) do
+    value(value, escape, encode_map, user_opts)
+  end
 
   @doc false
   # We use this directly in the helpers and deriving for extra speed
-  def value(value, escape, _encode_map) when is_atom(value) do
+  def value(value, escape, _encode_map, user_opts \\ nil)
+  def value(value, escape, _encode_map, _user_opts) when is_atom(value) do
     encode_atom(value, escape)
   end
 
-  def value(value, escape, _encode_map) when is_binary(value) do
+  def value(value, escape, _encode_map, _user_opts) when is_binary(value) do
     encode_string(value, escape)
   end
 
-  def value(value, _escape, _encode_map) when is_integer(value) do
+  def value(value, _escape, _encode_map, _user_opts) when is_integer(value) do
     integer(value)
   end
 
-  def value(value, _escape, _encode_map) when is_float(value) do
+  def value(value, _escape, _encode_map, _user_opts) when is_float(value) do
     float(value)
   end
 
-  def value(value, escape, encode_map) when is_list(value) do
-    list(value, escape, encode_map)
+  def value(value, escape, encode_map, user_opts) when is_list(value) do
+    list(value, escape, encode_map, user_opts)
   end
 
-  def value(%{__struct__: module} = value, escape, encode_map) do
-    struct(value, escape, encode_map, module)
+  def value(%{__struct__: module} = value, escape, encode_map, user_opts) do
+    struct(value, escape, encode_map, module, user_opts)
   end
 
-  def value(value, escape, encode_map) when is_map(value) do
+  def value(value, escape, encode_map, user_opts) when is_map(value) do
     case Map.to_list(value) do
       [] -> "{}"
-      keyword -> encode_map.(keyword, escape, encode_map)
+      keyword -> encode_map.(keyword, escape, encode_map, user_opts)
     end
   end
-
-  def value(value, escape, encode_map) do
-    Encoder.encode(value, {escape, encode_map})
+  def value(value, escape, encode_map, user_opts) do
+    Encoder.encode(value, {escape, encode_map, user_opts})
   end
 
   @compile {:inline, integer: 1, float: 1}
 
   @spec atom(atom, opts) :: iodata
   def atom(atom, {escape, _encode_map}) do
+    encode_atom(atom, escape)
+  end
+  def atom(atom, {escape, _encode_map, _user_opts}) do 
     encode_atom(atom, escape)
   end
 
@@ -168,70 +179,82 @@ defmodule Jason.Encode do
 
   @spec list(list, opts) :: iodata
   def list(list, {escape, encode_map}) do
-    list(list, escape, encode_map)
+    list(list, escape, encode_map, nil)
+  end
+  def list(list, {escape, encode_map, user_opts}) do
+    list(list, escape, encode_map, user_opts)
   end
 
-  defp list([], _escape, _encode_map) do
+  defp list([], _escape, _encode_map, _user_opts) do
     "[]"
   end
 
-  defp list([head | tail], escape, encode_map) do
-    [?[, value(head, escape, encode_map)
-     | list_loop(tail, escape, encode_map)]
+  defp list([head | tail], escape, encode_map, user_opts) do
+    [?[, value(head, escape, encode_map, user_opts)
+     | list_loop(tail, escape, encode_map, user_opts)]
   end
 
-  defp list_loop([], _escape, _encode_map) do
+  defp list_loop([], _escape, _encode_map, _user_opts) do
     ']'
   end
 
-  defp list_loop([head | tail], escape, encode_map) do
-    [?,, value(head, escape, encode_map)
-     | list_loop(tail, escape, encode_map)]
+  defp list_loop([head | tail], escape, encode_map, user_opts) do
+    [?,, value(head, escape, encode_map, user_opts)
+     | list_loop(tail, escape, encode_map, user_opts)]
   end
 
   @spec keyword(keyword, opts) :: iodata
   def keyword(list, _) when list == [], do: "{}"
   def keyword(list, {escape, encode_map}) when is_list(list) do
-    encode_map.(list, escape, encode_map)
+    encode_map.(list, escape, encode_map, nil)
+  end
+  def keyword(list, {escape, encode_map, user_opts}) when is_list(list) do
+    encode_map.(list, escape, encode_map, user_opts)
   end
 
   @spec map(map, opts) :: iodata
   def map(value, {escape, encode_map}) do
     case Map.to_list(value) do
       [] -> "{}"
-      keyword -> encode_map.(keyword, escape, encode_map)
+      keyword -> encode_map.(keyword, escape, encode_map, nil)
+    end
+  end
+  def map(value, {escape, encode_map, user_opts}) do
+    case Map.to_list(value) do
+      [] -> "{}"
+      keyword -> encode_map.(keyword, escape, encode_map, user_opts)
     end
   end
 
-  defp map_naive([{key, value} | tail], escape, encode_map) do
+  defp map_naive([{key, value} | tail], escape, encode_map, user_opts) do
     ["{\"", key(key, escape), "\":",
-    value(value, escape, encode_map)
-    | map_naive_loop(tail, escape, encode_map)]
+    value(value, escape, encode_map, user_opts)
+    | map_naive_loop(tail, escape, encode_map, user_opts)]
   end
 
-  defp map_naive_loop([], _escape, _encode_map) do
+  defp map_naive_loop([], _escape, _encode_map, _user_opts) do
     '}'
   end
 
-  defp map_naive_loop([{key, value} | tail], escape, encode_map) do
+  defp map_naive_loop([{key, value} | tail], escape, encode_map, user_opts) do
     [",\"", key(key, escape), "\":",
-     value(value, escape, encode_map)
-     | map_naive_loop(tail, escape, encode_map)]
+     value(value, escape, encode_map, user_opts)
+     | map_naive_loop(tail, escape, encode_map, user_opts)]
   end
 
-  defp map_strict([{key, value} | tail], escape, encode_map) do
+  defp map_strict([{key, value} | tail], escape, encode_map, user_opts) do
     key = IO.iodata_to_binary(key(key, escape))
     visited = %{key => []}
     ["{\"", key, "\":",
-     value(value, escape, encode_map)
-     | map_strict_loop(tail, escape, encode_map, visited)]
+     value(value, escape, encode_map, user_opts)
+     | map_strict_loop(tail, escape, encode_map, visited, user_opts)]
   end
 
-  defp map_strict_loop([], _encode_map, _escape, _visited) do
+  defp map_strict_loop([], _encode_map, _escape, _visited, _user_opts) do
     '}'
   end
 
-  defp map_strict_loop([{key, value} | tail], escape, encode_map, visited) do
+  defp map_strict_loop([{key, value} | tail], escape, encode_map, visited, user_opts) do
     key = IO.iodata_to_binary(key(key, escape))
     case visited do
       %{^key => _} ->
@@ -239,44 +262,51 @@ defmodule Jason.Encode do
       _ ->
         visited = Map.put(visited, key, [])
         [",\"", key, "\":",
-         value(value, escape, encode_map)
-         | map_strict_loop(tail, escape, encode_map, visited)]
+         value(value, escape, encode_map, user_opts)
+         | map_strict_loop(tail, escape, encode_map, visited, user_opts)]
     end
   end
 
   @spec struct(struct, opts) :: iodata
   def struct(%module{} = value, {escape, encode_map}) do
-    struct(value, escape, encode_map, module)
+    struct(value, escape, encode_map, module, nil)
+  end
+  def struct(%module{} = value, {escape, encode_map, user_opts}) do
+    struct(value, escape, encode_map, module, user_opts)
   end
 
   # TODO: benchmark the effect of inlining the to_iso8601 functions
   for module <- [Date, Time, NaiveDateTime, DateTime] do
-    defp struct(value, _escape, _encode_map, unquote(module)) do
+    defp struct(value, _escape, _encode_map, unquote(module), _user_opts) do
       [?", unquote(module).to_iso8601(value), ?"]
     end
   end
 
-  defp struct(value, _escape, _encode_map, Decimal) do
+  defp struct(value, _escape, _encode_map, Decimal, _user_opts) do
     # silence the xref warning
     decimal = Decimal
     [?", decimal.to_string(value, :normal), ?"]
   end
 
-  defp struct(value, escape, encode_map, Fragment) do
+  defp struct(value, escape, encode_map, Fragment, nil) do
     %{encode: encode} = value
     encode.({escape, encode_map})
   end
+  defp struct(value, escape, encode_map, Fragment, user_opts) do
+    %{encode: encode} = value
+    encode.({escape, encode_map, user_opts})
+  end
 
-  defp struct(value, escape, encode_map, OrderedObject) do
+  defp struct(value, escape, encode_map, OrderedObject, user_opts) do
     case value do
       %{values: []} -> "{}"
-      %{values: values} -> encode_map.(values, escape, encode_map)
+      %{values: values} -> encode_map.(values, escape, encode_map, user_opts)
     end
   end
-
-  defp struct(value, escape, encode_map, _module) do
-    Encoder.encode(value, {escape, encode_map})
+  defp struct(value, escape, encode_map, _module, user_opts) do
+    Encoder.encode(value, {escape, encode_map, user_opts})
   end
+
 
   @doc false
   # This is used in the helpers and deriving implementation
@@ -296,7 +326,9 @@ defmodule Jason.Encode do
   def string(string, {escape, _encode_map}) do
     encode_string(string, escape)
   end
-
+  def string(string, {escape, _encode_map,_user_opts}) do
+    encode_string(string, escape)
+  end
   defp encode_string(string, escape) do
     [?", escape.(string), ?"]
   end
