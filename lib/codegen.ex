@@ -19,7 +19,7 @@ defmodule Jason.Codegen do
   end
 
   defmacro bytecase(var, do: clauses) do
-    {ranges, default, literals} = clauses_to_ranges(clauses, [])
+    {ranges, default, literals} = clauses_to_ranges(clauses, [], __CALLER__)
 
     jump_table = jump_table(ranges, default)
 
@@ -31,7 +31,7 @@ defmodule Jason.Codegen do
   end
 
   defmacro bytecase(var, max, do: clauses) do
-    {ranges, default, empty} = clauses_to_ranges(clauses, [])
+    {ranges, default, empty} = clauses_to_ranges(clauses, [], __CALLER__)
 
     jump_table = jump_table(ranges, default, max)
 
@@ -51,11 +51,12 @@ defmodule Jason.Codegen do
     collapse_static(List.flatten(["{", elements] ++ '}'))
   end
 
-  defp clauses_to_ranges([{:->, _, [[{:in, _, [byte, range]}, rest], action]} | tail], acc) do
-    clauses_to_ranges(tail, [{range, {byte, rest, action}} | acc])
+  defp clauses_to_ranges([{:->, _, [[{:in, _, [byte, range]}, rest], action]} | tail], acc, env) do
+    range = Macro.expand(range, env)
+    clauses_to_ranges(tail, [{range, {byte, rest, action}} | acc], env)
   end
 
-  defp clauses_to_ranges([{:->, _, [[default, rest], action]} | tail], acc) do
+  defp clauses_to_ranges([{:->, _, [[default, rest], action]} | tail], acc, _env) do
     {Enum.reverse(acc), {default, rest, action}, literal_clauses(tail)}
   end
 
