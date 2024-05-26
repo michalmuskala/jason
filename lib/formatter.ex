@@ -163,11 +163,11 @@ defmodule Jason.Formatter do
     cont.(tail, output_acc)
   end
 
-  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in ' \n\r\t' do
+  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in ~c' \n\r\t' do
     pp_iodata(rest, output, depth, empty, opts)
   end
 
-  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in '{[' do
+  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in ~c'{[' do
     {out, depth} =
       cond do
         depth == :first -> {byte, 1}
@@ -180,25 +180,25 @@ defmodule Jason.Formatter do
     pp_iodata(rest, [output, out], depth, empty, opts)
   end
 
-  defp pp_byte(byte, rest, output, depth, true = _empty, opts) when byte in '}]' do
+  defp pp_byte(byte, rest, output, depth, true = _empty, opts) when byte in ~c'}]' do
     empty = false
     depth = depth - 1
     pp_iodata(rest, [output, byte], depth, empty, opts)
   end
 
-  defp pp_byte(byte, rest, output, depth, false = empty, opts) when byte in '}]' do
+  defp pp_byte(byte, rest, output, depth, false = empty, opts) when byte in ~c'}]' do
     depth = depth - 1
     out = [opts(opts, :line), tab(opts(opts, :indent), depth), byte]
     pp_iodata(rest, [output, out], depth, empty, opts)
   end
 
-  defp pp_byte(byte, rest, output, depth, _empty, opts) when byte in ',' do
+  defp pp_byte(byte, rest, output, depth, _empty, opts) when byte in ~c',' do
     empty = false
     out = [byte, opts(opts, :line), tab(opts(opts, :indent), depth)]
     pp_iodata(rest, [output, out], depth, empty, opts)
   end
 
-  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in ':' do
+  defp pp_byte(byte, rest, output, depth, empty, opts) when byte in ~c':' do
     out = [byte, opts(opts, :colon)]
     pp_iodata(rest, [output, out], depth, empty, opts)
   end

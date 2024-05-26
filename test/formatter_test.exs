@@ -49,13 +49,13 @@ defmodule Jason.FormatterTest do
   end
 
   test "pretty_print iolist" do
-    input = [['{"a":', " 3.14159", []], [[44]], "\"b\":", '1}']
+    input = [[~c'{"a":', " 3.14159", []], [[44]], "\"b\":", ~c'1}']
     output = ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
     assert(pretty_print(input) == output)
   end
 
   test "minimize iolist" do
-    input = [['{\n"a":  ', " 3.14159", []], [[44], '"'], "b\":\t", '1\n\n}']
+    input = [[~c'{\n"a":  ', " 3.14159", []], [[44], ~c'"'], "b\":\t", ~c'1\n\n}']
     output = ~s|{"a":3.14159,"b":1}|
     assert(minimize(input) == output)
   end
