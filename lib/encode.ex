@@ -181,7 +181,7 @@ defmodule Jason.Encode do
   end
 
   defp list_loop([], _escape, _encode_map) do
-    ']'
+    ~c']'
   end
 
   defp list_loop([head | tail], escape, encode_map) do
@@ -210,7 +210,7 @@ defmodule Jason.Encode do
   end
 
   defp map_naive_loop([], _escape, _encode_map) do
-    '}'
+    ~c'}'
   end
 
   defp map_naive_loop([{key, value} | tail], escape, encode_map) do
@@ -228,7 +228,7 @@ defmodule Jason.Encode do
   end
 
   defp map_strict_loop([], _encode_map, _escape, _visited) do
-    '}'
+    ~c'}'
   end
 
   defp map_strict_loop([{key, value} | tail], escape, encode_map, visited) do
@@ -301,7 +301,7 @@ defmodule Jason.Encode do
     [?", escape.(string), ?"]
   end
 
-  slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')
+  slash_escapes = Enum.zip(~c'\b\t\n\f\r\"\\', ~c'btnfr"\\')
   surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
   html_ranges = [{0x00..0x1F, :unicode}, {?<, :unicode}, {?/, ?/} | slash_escapes]
