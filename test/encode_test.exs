@@ -227,11 +227,13 @@ defmodule Jason.EncoderTest do
   end
 
   test "pretty: true" do
-    assert to_json(%{a: 3.14159, b: 1}, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
+    object = Jason.OrderedObject.new(a: 3.14159, b: 1)
+    assert to_json(object, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
   end
 
   test "pretty: false" do
-    assert to_json(%{a: 3.14159, b: 1}, pretty: false) == ~s|{"a":3.14159,"b":1}|
+    object = Jason.OrderedObject.new(a: 3.14159, b: 1)
+    assert to_json(object, pretty: false) == ~s|{"a":3.14159,"b":1}|
   end
 
   defp to_json(value) do
