@@ -144,7 +144,7 @@ decoding/encoding roundtrip.
 ```elixir
 already_encoded_json = Jason.encode!(%{hello: "world"})
 Jason.encode!(%{foo: Jason.Fragment.new(already_encoded_json)})
-````
+```
 
 This feature is especially useful if you need to cache a part of the JSON,
 or if it is already provided by another system (e.g. `jsonb_agg` with Postgres).
