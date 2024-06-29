@@ -15,9 +15,9 @@ defmodule Jason.FormatterTest do
   ]
 
   for name <- @test_cases do
-    input = File.open!("formatter_test_suite/#{name}.json") |> IO.binread(:all)
-    pretty = File.open!("formatter_test_suite/#{name}.pretty.json") |> IO.binread(:all)
-    min = File.open!("formatter_test_suite/#{name}.min.json") |> IO.binread(:all)
+    input = File.read!("formatter_test_suite/#{name}.json")
+    pretty = File.read!("formatter_test_suite/#{name}.pretty.json")
+    min = File.read!("formatter_test_suite/#{name}.min.json")
 
     test "#{name} |> pretty_print" do
       assert(pretty_print(unquote(input)) == unquote(pretty))
