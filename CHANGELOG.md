@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.3 (29.06.2024)
+
+* Fix derive with _ struct key
+
+## 1.4.2 (29.06.2024)
+
+* Fix compiler warnings for Elixir 1.17
+
 ## 1.4.1 (06.07.2023)
 
 * Add limit to decoded integer sizes of 1024 digits. This can be changed
