@@ -135,6 +135,11 @@ defmodule Jason.EncoderTest do
     defstruct name: "", size: 0
   end
 
+  defmodule DerivedWeirdKey do
+    @derive Encoder
+    defstruct [:_]
+  end
+
   defmodule NonDerived do
     defstruct name: ""
   end
@@ -154,6 +159,9 @@ defmodule Jason.EncoderTest do
 
     derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
     assert to_json(derived_using_except) == ~s({"size":10})
+
+    derived_weird_key = %DerivedWeirdKey{}
+    assert to_json(derived_weird_key) == ~s({"_":null})
   end
 
   test "@derive validate `except:`" do

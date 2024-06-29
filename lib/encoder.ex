@@ -77,7 +77,7 @@ end
 defimpl Jason.Encoder, for: Any do
   defmacro __deriving__(module, struct, opts) do
     fields = fields_to_encode(struct, opts)
-    kv = Enum.map(fields, &{&1, generated_var(&1, __MODULE__)})
+    kv = Enum.map(fields, &{&1, generated_var(&1)})
     escape = quote(do: escape)
     encode_map = quote(do: encode_map)
     encode_args = [escape, encode_map]
@@ -94,9 +94,12 @@ defimpl Jason.Encoder, for: Any do
     end
   end
 
-  # The same as Macro.var/2 except it sets generated: true
-  defp generated_var(name, context) do
-    {name, [generated: true], context}
+  # The same as Macro.var/2 except it sets generated: true and handles _ key
+  defp generated_var(:_) do
+    {:__, [generated: true], __MODULE__.Underscore}
+  end
+  defp generated_var(name) do
+    {name, [generated: true], __MODULE__}
   end
 
   def encode(%_{} = struct, _opts) do
