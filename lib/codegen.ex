@@ -48,7 +48,7 @@ defmodule Jason.Codegen do
       |> Enum.map(&encode_pair(&1, encode_args))
       |> Enum.intersperse(",")
 
-    collapse_static(List.flatten(["{", elements] ++ '}'))
+    collapse_static(List.flatten(["{", elements] ++ ~c'}'))
   end
 
   defp clauses_to_ranges([{:->, _, [[{:in, _, [byte, range]}, rest], action]} | tail], acc, env) do
@@ -116,7 +116,7 @@ defmodule Jason.Codegen do
 
   defp check_safe_key!(binary) do
     for <<(<<byte>> <- binary)>> do
-      if byte > 0x7F or byte < 0x1F or byte in '"\\/' do
+      if byte > 0x7F or byte < 0x1F or byte in ~c'"\\/' do
         raise EncodeError,
               "invalid byte #{inspect(byte, base: :hex)} in literal key: #{inspect(binary)}"
       end
