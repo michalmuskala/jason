@@ -86,15 +86,18 @@ defmodule Jason.Decoder do
     end
   end
 
-  defp float_decode_function(%{floats: :decimals}) do
-    fn string, token, skip ->
-      # silence xref warning
-      decimal = Decimal
-      try do
-        decimal.new(string)
-      rescue
-        Decimal.Error ->
-          token_error(token, skip)
+  if Code.ensure_loaded?(Decimal) do
+    defp float_decode_function(%{floats: :decimals}) do
+      fn string, token, skip ->
+        # silence xref warning
+        decimal = Decimal
+
+        try do
+          decimal.new(string)
+        rescue
+          Decimal.Error ->
+            token_error(token, skip)
+        end
       end
     end
   end
