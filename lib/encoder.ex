@@ -224,11 +224,13 @@ defimpl Jason.Encoder, for: [Date, Time, NaiveDateTime, DateTime] do
   end
 end
 
-defimpl Jason.Encoder, for: Decimal do
-  def encode(value, _opts) do
-    # silence the xref warning
-    decimal = Decimal
-    [?", decimal.to_string(value), ?"]
+if Code.ensure_loaded?(Decimal) do
+  defimpl Jason.Encoder, for: Decimal do
+    def encode(value, _opts) do
+      # silence the xref warning
+      decimal = Decimal
+      [?", decimal.to_string(value), ?"]
+    end
   end
 end
 
