@@ -238,9 +238,7 @@ defmodule Jason.Encode do
 
   if Code.ensure_loaded?(Decimal) do
     defp struct(value, _escape, _encode_map, Decimal) do
-      # silence the xref warning
-      decimal = Decimal
-      [?", decimal.to_string(value, :normal), ?"]
+      [?", Decimal.to_string(value, :normal), ?"]
     end
   end
 
