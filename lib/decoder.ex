@@ -97,6 +97,10 @@ defmodule Jason.Decoder do
         end
       end
     end
+  else
+    defp float_decode_function(%{floats: :decimals}) do
+      raise ArgumentError, "decimal library not found, :decimals option not available"
+    end
   end
 
   defp value(data, original, skip, stack, decode) do
