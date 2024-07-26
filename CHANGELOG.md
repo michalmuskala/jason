@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.4 (26.07.2024)
+
+* Fix warnings on Elixir 1.17 by conditionally compiling Decimal support
+
 ## 1.4.3 (29.06.2024)
 
 * Fix derive with _ struct key
