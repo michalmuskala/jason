@@ -195,7 +195,7 @@ defmodule Jason.Encode do
   end
 
   defp list_loop([], _escape, _encode_map, _user_opts) do
-    ']'
+    ~c']'
   end
 
   defp list_loop([head | tail], escape, encode_map, user_opts) do
@@ -232,8 +232,8 @@ defmodule Jason.Encode do
     | map_naive_loop(tail, escape, encode_map, user_opts)]
   end
 
-  defp map_naive_loop([], _escape, _encode_map, _user_opts) do
-    '}'
+  defp map_naive_loop([], _escape, _encode_map, _) do
+    ~c'}'
   end
 
   defp map_naive_loop([{key, value} | tail], escape, encode_map, user_opts) do
@@ -251,7 +251,7 @@ defmodule Jason.Encode do
   end
 
   defp map_strict_loop([], _encode_map, _escape, _visited, _user_opts) do
-    '}'
+    ~c'}'
   end
 
   defp map_strict_loop([{key, value} | tail], escape, encode_map, visited, user_opts) do
@@ -282,10 +282,10 @@ defmodule Jason.Encode do
     end
   end
 
-  defp struct(value, _escape, _encode_map, Decimal, _user_opts) do
-    # silence the xref warning
-    decimal = Decimal
-    [?", decimal.to_string(value, :normal), ?"]
+  if Code.ensure_loaded?(Decimal) do
+    defp struct(value, _escape, _encode_map, Decimal,_) do
+      [?", Decimal.to_string(value, :normal), ?"]
+    end
   end
 
   defp struct(value, escape, encode_map, Fragment, nil) do
@@ -333,7 +333,7 @@ defmodule Jason.Encode do
     [?", escape.(string), ?"]
   end
 
-  slash_escapes = Enum.zip('\b\t\n\f\r\"\\', 'btnfr"\\')
+  slash_escapes = Enum.zip(~c'\b\t\n\f\r\"\\', ~c'btnfr"\\')
   surogate_escapes = Enum.zip([0x2028, 0x2029], ["\\u2028", "\\u2029"])
   ranges = [{0x00..0x1F, :unicode} | slash_escapes]
   html_ranges = [{0x00..0x1F, :unicode}, {?<, :unicode}, {?/, ?/} | slash_escapes]

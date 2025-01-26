@@ -78,7 +78,7 @@ defmodule Jason.EncoderTest do
     assert to_json(%{"foo" => "bar"})  == ~s({"foo":"bar"})
     assert to_json(%{foo: :bar}) == ~s({"foo":"bar"})
     assert to_json(%{42 => :bar}) == ~s({"42":"bar"})
-    assert to_json(%{'foo' => :bar}) == ~s({"foo":"bar"})
+    assert to_json(%{~c'foo' => :bar}) == ~s({"foo":"bar"})
 
     multi_key_map = %{"foo" => "foo1", :foo => "foo2"}
     assert_raise EncodeError, "duplicate key: foo", fn ->
@@ -132,7 +132,7 @@ defmodule Jason.EncoderTest do
     assert to_json(new([{"foo", "bar"}]))  == ~s({"foo":"bar"})
     assert to_json(new([foo: :bar])) == ~s({"foo":"bar"})
     assert to_json(new([{42, :bar}])) == ~s({"42":"bar"})
-    assert to_json(new([{'foo', :bar}])) == ~s({"foo":"bar"})
+    assert to_json(new([{~c'foo', :bar}])) == ~s({"foo":"bar"})
 
     multi_key_map = new([{"foo", "foo1"}, {:foo, "foo2"}])
     assert_raise EncodeError, "duplicate key: foo", fn ->
@@ -162,6 +162,11 @@ defmodule Jason.EncoderTest do
     defstruct name: "", size: 0
   end
 
+  defmodule DerivedWeirdKey do
+    @derive Encoder
+    defstruct [:_]
+  end
+
   defmodule NonDerived do
     defstruct name: ""
   end
@@ -181,6 +186,9 @@ defmodule Jason.EncoderTest do
 
     derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
     assert to_json(derived_using_except) == ~s({"size":10})
+
+    derived_weird_key = %DerivedWeirdKey{}
+    assert to_json(derived_weird_key) == ~s({"_":null})
   end
 
   test "@derive validate `except:`" do
@@ -254,11 +262,13 @@ defmodule Jason.EncoderTest do
   end
 
   test "pretty: true" do
-    assert to_json(%{a: 3.14159, b: 1}, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
+    object = Jason.OrderedObject.new(a: 3.14159, b: 1)
+    assert to_json(object, pretty: true) == ~s|{\n  "a": 3.14159,\n  "b": 1\n}|
   end
 
   test "pretty: false" do
-    assert to_json(%{a: 3.14159, b: 1}, pretty: false) == ~s|{"a":3.14159,"b":1}|
+    object = Jason.OrderedObject.new(a: 3.14159, b: 1)
+    assert to_json(object, pretty: false) == ~s|{"a":3.14159,"b":1}|
   end
 
   defp to_json(value) do

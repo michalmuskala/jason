@@ -86,52 +86,56 @@ defmodule Jason.Decoder do
     end
   end
 
-  defp float_decode_function(%{floats: :decimals}) do
-    fn string, token, skip ->
-      # silence xref warning
-      decimal = Decimal
-      try do
-        decimal.new(string)
-      rescue
-        Decimal.Error ->
-          token_error(token, skip)
+  if Code.ensure_loaded?(Decimal) do
+    defp float_decode_function(%{floats: :decimals}) do
+      fn string, token, skip ->
+        try do
+          Decimal.new(string)
+        rescue
+          Decimal.Error ->
+            token_error(token, skip)
+        end
       end
+    end
+  else
+    defp float_decode_function(%{floats: :decimals}) do
+      raise ArgumentError, "decimal library not found, :decimals option not available"
     end
   end
 
   defp value(data, original, skip, stack, decode) do
     bytecase data do
-      _ in '\s\n\t\r', rest ->
+      _ in ~c'\s\n\t\r', rest ->
         value(rest, original, skip + 1, stack, decode)
-      _ in '0', rest ->
+      _ in ~c'0', rest ->
         number_zero(rest, original, skip, stack, decode, 1)
-      _ in '123456789', rest ->
+      _ in ~c'123456789', rest ->
         number(rest, original, skip, stack, decode, 1)
-      _ in '-', rest ->
+      _ in ~c'-', rest ->
         number_minus(rest, original, skip, stack, decode)
-      _ in '"', rest ->
+      _ in ~c'"', rest ->
         string(rest, original, skip + 1, stack, decode, 0)
-      _ in '[', rest ->
+      _ in ~c'[', rest ->
         array(rest, original, skip + 1, stack, decode)
-      _ in '{', rest ->
+      _ in ~c'{', rest ->
         object(rest, original, skip + 1, stack, decode)
-      _ in ']', rest ->
+      _ in ~c']', rest ->
         empty_array(rest, original, skip + 1, stack, decode)
-      _ in 't', rest ->
+      _ in ~c't', rest ->
         case rest do
           <<"rue", rest::bits>> ->
             continue(rest, original, skip + 4, stack, decode, true)
           <<_::bits>> ->
             error(original, skip)
         end
-      _ in 'f', rest ->
+      _ in ~c'f', rest ->
         case rest do
           <<"alse", rest::bits>> ->
             continue(rest, original, skip + 5, stack, decode, false)
           <<_::bits>> ->
             error(original, skip)
         end
-      _ in 'n', rest ->
+      _ in ~c'n', rest ->
         case rest do
           <<"ull", rest::bits>> ->
             continue(rest, original, skip + 4, stack, decode, nil)
@@ -149,7 +153,7 @@ defmodule Jason.Decoder do
     number_zero(rest, original, skip, stack, decode, 2)
   end
   defp number_minus(<<byte, rest::bits>>, original, skip, stack, decode)
-       when byte in '123456789' do
+       when byte in ~c'123456789' do
     number(rest, original, skip, stack, decode, 2)
   end
   defp number_minus(<<_rest::bits>>, original, skip, _stack, _decode) do
@@ -164,13 +168,13 @@ defmodule Jason.Decoder do
   end
 
   defp number(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number(rest, original, skip, stack, decode, len + 1)
   end
   defp number(<<?., rest::bits>>, original, skip, stack, decode, len) do
     number_frac(rest, original, skip, stack, decode, len + 1)
   end
-  defp number(<<e, rest::bits>>, original, skip, stack, decode, len) when e in 'eE' do
+  defp number(<<e, rest::bits>>, original, skip, stack, decode, len) when e in ~c'eE' do
     prefix = binary_part(original, skip, len)
     number_exp_copy(rest, original, skip + len + 1, stack, decode, prefix)
   end
@@ -184,7 +188,7 @@ defmodule Jason.Decoder do
   end
 
   defp number_frac(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_frac_cont(rest, original, skip, stack, decode, len + 1)
   end
   defp number_frac(<<_rest::bits>>, original, skip, _stack, _decode, len) do
@@ -192,11 +196,11 @@ defmodule Jason.Decoder do
   end
 
   defp number_frac_cont(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_frac_cont(rest, original, skip, stack, decode, len + 1)
   end
   defp number_frac_cont(<<e, rest::bits>>, original, skip, stack, decode, len)
-       when e in 'eE' do
+       when e in ~c'eE' do
     number_exp(rest, original, skip, stack, decode, len + 1)
   end
   defp number_frac_cont(<<rest::bits>>, original, skip, stack, decode, len) do
@@ -207,11 +211,11 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, len + 1)
   end
   defp number_exp(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '+-' do
+       when byte in ~c'+-' do
     number_exp_sign(rest, original, skip, stack, decode, len + 1)
   end
   defp number_exp(<<_rest::bits>>, original, skip, _stack, _decode, len) do
@@ -219,7 +223,7 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp_sign(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, len + 1)
   end
   defp number_exp_sign(<<_rest::bits>>, original, skip, _stack, _decode, len) do
@@ -227,7 +231,7 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp_cont(<<byte, rest::bits>>, original, skip, stack, decode, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, len + 1)
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, decode, len) do
@@ -238,11 +242,11 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp_copy(<<byte, rest::bits>>, original, skip, stack, decode, prefix)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, prefix, 1)
   end
   defp number_exp_copy(<<byte, rest::bits>>, original, skip, stack, decode, prefix)
-       when byte in '+-' do
+       when byte in ~c'+-' do
     number_exp_sign(rest, original, skip, stack, decode, prefix, 1)
   end
   defp number_exp_copy(<<_rest::bits>>, original, skip, _stack, _decode, _prefix) do
@@ -250,7 +254,7 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp_sign(<<byte, rest::bits>>, original, skip, stack, decode, prefix, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, prefix, len + 1)
   end
   defp number_exp_sign(<<_rest::bits>>, original, skip, _stack, _decode, _prefix, len) do
@@ -258,7 +262,7 @@ defmodule Jason.Decoder do
   end
 
   defp number_exp_cont(<<byte, rest::bits>>, original, skip, stack, decode, prefix, len)
-       when byte in '0123456789' do
+       when byte in ~c'0123456789' do
     number_exp_cont(rest, original, skip, stack, decode, prefix, len + 1)
   end
   defp number_exp_cont(<<rest::bits>>, original, skip, stack, decode, prefix, len) do
@@ -276,7 +280,7 @@ defmodule Jason.Decoder do
   defp number_zero(<<?., rest::bits>>, original, skip, stack, decode, len) do
     number_frac(rest, original, skip, stack, decode, len + 1)
   end
-  defp number_zero(<<e, rest::bits>>, original, skip, stack, decode, len) when e in 'eE' do
+  defp number_zero(<<e, rest::bits>>, original, skip, stack, decode, len) when e in ~c'eE' do
     number_exp_copy(rest, original, skip + len + 1, stack, decode, "0")
   end
   defp number_zero(<<rest::bits>>, original, skip, stack, decode, len) do
@@ -300,13 +304,13 @@ defmodule Jason.Decoder do
 
   defp array(data, original, skip, stack, decode, value) do
     bytecase data do
-      _ in '\s\n\t\r', rest ->
+      _ in ~c'\s\n\t\r', rest ->
         array(rest, original, skip + 1, stack, decode, value)
-      _ in ']', rest ->
+      _ in ~c']', rest ->
         [acc | stack] = stack
         value = :lists.reverse(acc, [value])
         continue(rest, original, skip + 1, stack, decode, value)
-      _ in ',', rest ->
+      _ in ~c',', rest ->
         [acc | stack] = stack
         value(rest, original, skip + 1, [@array, [value | acc] | stack], decode)
       _, _rest ->
@@ -324,16 +328,16 @@ defmodule Jason.Decoder do
 
   defp object(data, original, skip, stack, decode, value) do
     bytecase data do
-      _ in '\s\n\t\r', rest ->
+      _ in ~c'\s\n\t\r', rest ->
         object(rest, original, skip + 1, stack, decode, value)
-      _ in '}', rest ->
+      _ in ~c'}', rest ->
         skip = skip + 1
         [key, acc | stack] = stack
         decode(keys: key_decode) = decode
         final = [{key_decode.(key), value} | acc]
         decode(objects: object_decode) = decode
         continue(rest, original, skip, stack, decode, object_decode.(final))
-      _ in ',', rest ->
+      _ in ~c',', rest ->
         skip = skip + 1
         [key, acc | stack] = stack
         decode(keys: key_decode) = decode
@@ -348,9 +352,9 @@ defmodule Jason.Decoder do
 
   defp key(data, original, skip, stack, decode) do
     bytecase data do
-      _ in '\s\n\t\r', rest ->
+      _ in ~c'\s\n\t\r', rest ->
         key(rest, original, skip + 1, stack, decode)
-      _ in '}', rest ->
+      _ in ~c'}', rest ->
         case stack do
           [[] | stack] ->
             decode(objects: object_decode) = decode
@@ -358,7 +362,7 @@ defmodule Jason.Decoder do
           _ ->
             error(original, skip)
         end
-      _ in '"', rest ->
+      _ in ~c'"', rest ->
         string(rest, original, skip + 1, [@key | stack], decode, 0)
       _, _rest ->
         error(original, skip)
@@ -369,9 +373,9 @@ defmodule Jason.Decoder do
 
   defp key(data, original, skip, stack, decode, value) do
     bytecase data do
-      _ in '\s\n\t\r', rest ->
+      _ in ~c'\s\n\t\r', rest ->
         key(rest, original, skip + 1, stack, decode, value)
-      _ in ':', rest ->
+      _ in ~c':', rest ->
         value(rest, original, skip + 1, [@object, value | stack], decode)
       _, _rest ->
         error(original, skip)
@@ -385,11 +389,11 @@ defmodule Jason.Decoder do
   # http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
   defp string(data, original, skip, stack, decode, len) do
     bytecase data, 128 do
-      _ in '"', rest ->
+      _ in ~c'"', rest ->
         decode(strings: string_decode) = decode
         string = string_decode.(binary_part(original, skip, len))
         continue(rest, original, skip + len + 1, stack, decode, string)
-      _ in '\\', rest ->
+      _ in ~c'\\', rest ->
         part = binary_part(original, skip, len)
         escape(rest, original, skip + len, stack, decode, part)
       _ in unquote(0x00..0x1F), _rest ->
@@ -409,11 +413,11 @@ defmodule Jason.Decoder do
 
   defp string(data, original, skip, stack, decode, acc, len) do
     bytecase data, 128 do
-      _ in '"', rest ->
+      _ in ~c'"', rest ->
         last = binary_part(original, skip, len)
         string = IO.iodata_to_binary([acc | last])
         continue(rest, original, skip + len + 1, stack, decode, string)
-      _ in '\\', rest ->
+      _ in ~c'\\', rest ->
         part = binary_part(original, skip, len)
         escape(rest, original, skip + len, stack, decode, [acc | part])
       _ in unquote(0x00..0x1F), _rest ->
@@ -433,23 +437,23 @@ defmodule Jason.Decoder do
 
   defp escape(data, original, skip, stack, decode, acc) do
     bytecase data do
-      _ in 'b', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\b'], 0)
-      _ in 't', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\t'], 0)
-      _ in 'n', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\n'], 0)
-      _ in 'f', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\f'], 0)
-      _ in 'r', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\r'], 0)
-      _ in '"', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\"'], 0)
-      _ in '/', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '/'], 0)
-      _ in '\\', rest ->
-        string(rest, original, skip + 2, stack, decode, [acc | '\\'], 0)
-      _ in 'u', rest ->
+      _ in ~c'b', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\b'], 0)
+      _ in ~c't', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\t'], 0)
+      _ in ~c'n', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\n'], 0)
+      _ in ~c'f', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\f'], 0)
+      _ in ~c'r', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\r'], 0)
+      _ in ~c'"', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\"'], 0)
+      _ in ~c'/', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'/'], 0)
+      _ in ~c'\\', rest ->
+        string(rest, original, skip + 2, stack, decode, [acc | ~c'\\'], 0)
+      _ in ~c'u', rest ->
         escapeu(rest, original, skip, stack, decode, acc)
       _, _rest ->
         error(original, skip + 1)
@@ -606,7 +610,7 @@ defmodule Jason.Decoder do
     end
 
     defp escapeu_surrogate_clauses(last, rest, original, skip, stack, decode, acc, hi) do
-      digits1 = 'Dd'
+      digits1 = ~c'Dd'
       digits2 = Stream.concat([?C..?F, ?c..?f])
       for {int, first} <- unicode_escapes(digits1, digits2) do
         escapeu_surrogate_clause(int, first, last, rest, original, skip, stack, decode, acc, hi)
@@ -692,7 +696,7 @@ defmodule Jason.Decoder do
   end
 
   defp terminate(<<byte, rest::bits>>, original, skip, stack, decode, value)
-       when byte in '\s\n\r\t' do
+       when byte in ~c'\s\n\r\t' do
     terminate(rest, original, skip + 1, stack, decode, value)
   end
   defp terminate(<<>>, _original, _skip, _stack, _decode, value) do

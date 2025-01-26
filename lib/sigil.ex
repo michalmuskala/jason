@@ -33,7 +33,7 @@ defmodule Jason.Sigil do
       iex> ~j'{"atom": "value"}'a
       %{atom: "value"}
 
-      iex> ~j'{"#{:j}": #{'"j"'}}'A
+      iex> ~j'{"#{:j}": #{~c'"j"'}}'A
       %{j: "j"}
 
   """
