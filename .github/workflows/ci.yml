@@ -56,6 +56,9 @@ jobs:
             os: ubuntu-22.04
           - elixir: 1.16.x
             otp: 26
+            os: ubuntu-22.04
+          - elixir: 1.17.x
+            otp: 27
             os: ubuntu-latest
             warnings_as_errors: true
     env:
@@ -97,8 +100,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 26
-          elixir-version: 1.16.x
+          otp-version: 27
+          elixir-version: 1.17.x
       - name: Install Dependencies
         run: |
           mix local.hex --force
