@@ -18,48 +18,78 @@ jobs:
           - elixir: 1.4.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.5.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.6.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.7.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.8.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.9.x
             otp: 20
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.10.x
             otp: 21
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.11.x
             otp: 22
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.11.x
             otp: 23
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.12.x
             otp: 23
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.13.x
             otp: 24
             os: ubuntu-20.04
+            gcc: gcc-10
+            gpp: g++-10
           - elixir: 1.14.x
             otp: 25
             os: ubuntu-22.04
+            gcc: gcc-11
+            gpp: g++-11
           - elixir: 1.15.x
             otp: 26
             os: ubuntu-22.04
+            gcc: gcc-11
+            gpp: g++-11
           - elixir: 1.16.x
             otp: 26
             os: ubuntu-22.04
+            gcc: gcc-11
+            gpp: g++-11
           - elixir: 1.17.x
             otp: 27
             os: ubuntu-latest
+            gcc: gcc-13
+            gpp: g++-13
             warnings_as_errors: true
     env:
       MIX_ENV: test
@@ -85,12 +115,12 @@ jobs:
       - run: mix compile --warnings-as-errors
         if: matrix.warnings_as_errors
         env:
-          CC: gcc-10
-          CXX: g++-10
+          CC: ${{matrix.gcc}}
+          CXX: ${{matrix.gpp}}
       - run: mix test
         env:
-          CC: gcc-10
-          CXX: g++-10
+          CC: ${{matrix.gcc}}
+          CXX: ${{matrix.gpp}}
   dialyzer:
     name: mix dialyzer
     runs-on: ubuntu-latest
