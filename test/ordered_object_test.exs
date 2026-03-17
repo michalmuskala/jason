@@ -3,6 +3,8 @@ defmodule Jason.OrderedObjectTest do
 
   alias Jason.OrderedObject
 
+  doctest Jason.OrderedObject
+
   test "Access behavior" do
     obj = OrderedObject.new([{:foo, 1}, {"bar", 2}])
 
