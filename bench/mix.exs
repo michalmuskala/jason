@@ -6,6 +6,7 @@ defmodule JasonBench.MixProject do
       app: :jason_bench,
       version: "0.1.0",
       elixir: "~> 1.6",
+      elixirc_path: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases()
@@ -31,7 +32,9 @@ defmodule JasonBench.MixProject do
       {:tiny, "~> 1.0"},
       {:jsone, "~> 1.4"},
       {:jiffy, "~> 1.0"},
-      {:json, "~> 1.0"},
+      {:jsonrs, "~> 0.3"}
     ]
   end
+
+  defp elixirc_paths(_), do: ["lib"]
 end
