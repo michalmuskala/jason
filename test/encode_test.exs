@@ -190,6 +190,19 @@ defmodule Jason.EncoderTest do
     end
   end
 
+  test "@derive validate `invalid:`" do
+    message = "unknown keys [:invalid] in [invalid: [:__meta__]], the allowed keys are: [:only, :except]"
+
+    assert_raise ArgumentError, message, fn ->
+      Code.eval_string("""
+      defmodule InvalidOption do
+        @derive {Jason.Encoder, invalid: [:__meta__]}
+        defstruct name: "", size: 0
+      end
+      """)
+    end
+  end
+
   defmodule KeywordTester do
     defstruct [:baz, :foo, :quux]
   end

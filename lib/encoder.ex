@@ -138,6 +138,7 @@ defimpl Jason.Encoder, for: Any do
   end
 
   defp fields_to_encode(struct, opts) do
+    Keyword.validate!(opts, [:only, :except])
     fields = Map.keys(struct)
 
     cond do
