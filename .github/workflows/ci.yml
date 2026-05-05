@@ -70,14 +70,20 @@ jobs:
   dialyzer:
     name: mix dialyzer
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.19.x
+            otp: 28
     env:
       MIX_ENV: test
     steps:
       - uses: actions/checkout@v2
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: 28
-          elixir-version: 1.19.x
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
       - name: Install Dependencies
         run: |
           mix local.hex --force
@@ -90,5 +96,5 @@ jobs:
             ~/.hex
             ~/.mix
             _build
-          key: dialyzer
+          key: ${{ matrix.otp }}-${{ matrix.elixir }}-dialyzer
       - run: mix dialyzer --halt-exit-status
