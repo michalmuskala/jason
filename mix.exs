@@ -2,7 +2,7 @@ defmodule Jason.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/michalmuskala/jason"
-  @version "1.5.0-alpha.2"
+  @version "1.4.0"
 
   def project() do
     [
@@ -31,7 +31,6 @@ defmodule Jason.Mixfile do
       {:decimal, "~> 1.0 or ~> 2.0", optional: true},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:jason_native, ">= 0.0.0", optional: true}
     ] ++ maybe_stream_data()
   end
 
@@ -45,7 +44,7 @@ defmodule Jason.Mixfile do
 
   defp dialyzer() do
     [
-      plt_add_apps: [:decimal, :jason_native]
+      plt_add_apps: [:decimal]
     ]
   end
 

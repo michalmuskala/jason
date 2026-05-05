@@ -1,21 +1,21 @@
 # Changelog
 
-## 1.5.0-alpha.2 (07.07.2023)
+## 1.4.4 (26.07.2024)
 
-* Add limit to decoded integer sizes of 1024 digits. This can be changed
-  with the `decoding_integer_digit_limit` app env config.
+* Fix warnings on Elixir 1.17 by conditionally compiling Decimal support
+
+## 1.4.3 (29.06.2024)
+
+* Fix derive with _ struct key
+
+## 1.4.2 (29.06.2024)
+
+* Fix compiler warnings for Elixir 1.17
 
 ## 1.4.1 (06.07.2023)
 
 * Add limit to decoded integer sizes of 1024 digits. This can be changed
   with the `decoding_integer_digit_limit` app env config.
-
-## 1.5.0-alpha.1 (16.10.2022)
-
-### Enhancements
-
-* Add optional dependency for [`jason_native`](https://github.com/spawnfest/json_native).
-  Please refer to the repo for usage instructions
 
 ## 1.4.0 (12.09.2022)
 

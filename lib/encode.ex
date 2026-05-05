@@ -38,8 +38,6 @@ defmodule Jason.Encode do
     catch
       :throw, %EncodeError{} = e ->
         {:error, e}
-      :error, {:invalid_byte, _, _} = e ->
-        {:error, EncodeError.new(e)}
       :error, %Protocol.UndefinedError{protocol: Jason.Encoder} = e ->
         {:error, e}
     end
@@ -52,33 +50,15 @@ defmodule Jason.Encode do
     end
   end
 
-  if Code.ensure_loaded?(Jason.Native) do
-    defp escape_function(%{escape: escape}) do
-      case escape do
-        :json -> &Jason.Native.escape_json/1
-        :native_json -> &Jason.Native.escape_json/1
-        :elixir_json -> &escape_json/1
-        :html_safe -> &escape_html/1
-        :unicode_safe -> &escape_unicode/1
-        :javascript_safe -> &escape_javascript/1
-        # Keep for compatibility with Poison
-        :javascript -> &escape_javascript/1
-        :unicode -> &escape_unicode/1
-      end
-    end
-  else
-    defp escape_function(%{escape: escape}) do
-      case escape do
-        :json -> &escape_json/1
-        :native_json -> raise ArgumentError, "jason_native not found, :native_ options not available"
-        :elixir_json -> &escape_json/1
-        :html_safe -> &escape_html/1
-        :unicode_safe -> &escape_unicode/1
-        :javascript_safe -> &escape_javascript/1
-        # Keep for compatibility with Poison
-        :javascript -> &escape_javascript/1
-        :unicode -> &escape_unicode/1
-      end
+  defp escape_function(%{escape: escape}) do
+    case escape do
+      :json -> &escape_json/1
+      :html_safe -> &escape_html/1
+      :unicode_safe -> &escape_unicode/1
+      :javascript_safe -> &escape_javascript/1
+      # Keep for compatibility with Poison
+      :javascript -> &escape_javascript/1
+      :unicode -> &escape_unicode/1
     end
   end
 

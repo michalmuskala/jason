@@ -1,13 +1,12 @@
 encode_jobs = %{
-  "Jason"          => &Jason.encode_to_iodata!(&1, escape: :elixir_json),
-  "Jason native"   => &Jason.encode_to_iodata!(&1, escape: :native_json),
-  # "Jason strict"   => &Jason.encode_to_iodata!(&1, maps: :strict, escape: :elixir_json),
-  "Poison"         => &Poison.encode!/1,
-  # "JSX"            => &JSX.encode!/1,
-  # "Tiny"           => &Tiny.encode!/1,
-  # "jsone"          => &:jsone.encode/1,
+  "Jason"          => &Jason.encode_to_iodata!/1,
+  "Jason strict"   => &Jason.encode_to_iodata!(&1, maps: :strict),
+  "Poison"         => &Poison.encode_to_iodata!/1,
+  "JSX"            => &JSX.encode!/1,
+  "Tiny"           => &Tiny.encode!/1,
+  "jsone"          => &:jsone.encode/1,
   "jiffy"          => &:jiffy.encode/1,
-  # "JSON"           => &JSON.encode!/1,
+  "JSON"           => &JSON.encode!/1,
   # "term_to_binary" => &:erlang.term_to_binary/1,
 }
 
@@ -36,10 +35,9 @@ end
 
 Benchee.run(encode_jobs,
 #  parallel: 4,
-  warmup: 2,
-  time: 15,
-  memory_time: 0.01,
-  reduction_time: 0.01,
+  warmup: 5,
+  time: 30,
+  memory_time: 1,
   inputs: for name <- encode_inputs, into: %{} do
             name
             |> read_data.()
