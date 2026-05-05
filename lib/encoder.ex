@@ -10,6 +10,7 @@ defprotocol Jason.Encoder do
 
     * `:only` - encodes only values of specified keys.
     * `:except` - encodes all struct fields except specified keys.
+    * `:sort_keys` - sorts the keys, optionally with a custom function.
 
   By default all keys except the `:__struct__` key are encoded.
 
@@ -50,6 +51,13 @@ defprotocol Jason.Encoder do
 
   The actually generated implementations are more efficient computing some data
   during compilation similar to the macros from the `Jason.Helpers` module.
+
+  ## Sorting keys
+
+  You can also sort the keys in the output JSON, either according to Erlang's
+  term ordering with `@derive {Jason.Encoder, sort_keys: true}` or using a custom
+  sort function (as passed to `Enum.sort/2`) e.g.
+  `@derive {Jason.Encoder, sort_keys: &(&1>=&2)}`
 
   ## Explicit implementation
 
@@ -138,7 +146,15 @@ defimpl Jason.Encoder, for: Any do
   end
 
   defp fields_to_encode(struct, opts) do
-    fields = Map.keys(struct)
+    fields =  case Keyword.get(opts, :sort_keys) do
+      true ->
+        Map.keys(struct) |> Enum.sort()
+      sort_fn when is_function(sort_fn, 2) ->
+        Map.keys(struct)
+        |> Enum.sort(sort_fn)
+      nil ->
+        Map.keys(struct)
+    end
 
     cond do
       only = Keyword.get(opts, :only) ->

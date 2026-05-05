@@ -135,6 +135,18 @@ defmodule Jason.EncoderTest do
     defstruct name: "", size: 0
   end
 
+  defmodule DerivedUsingSortKeys do
+    @derive {Encoder, sort_keys: true}
+    defstruct a: 1, b: "", c: nil, d: 4
+  end
+
+
+  defmodule DerivedUsingCustomSortKeys do
+    @derive {Encoder, sort_keys: &(&1>=&2)}
+    defstruct a: 1, b: "", c: nil, d: 4
+  end
+
+
   defmodule DerivedWeirdKey do
     @derive Encoder
     defstruct [:_]
@@ -159,6 +171,12 @@ defmodule Jason.EncoderTest do
 
     derived_using_except = %DerivedUsingExcept{name: "derived using :except", size: 10}
     assert to_json(derived_using_except) == ~s({"size":10})
+
+    derived_using_sort_keys = %DerivedUsingSortKeys{}
+    assert to_json(derived_using_sort_keys) == ~s({"a":1,"b":"","c":null,"d":4})
+
+    derived_using_custom_sort_keys = %DerivedUsingCustomSortKeys{}
+    assert to_json(derived_using_custom_sort_keys) == ~s({"d":4,"c":null,"b":"","a":1})
 
     derived_weird_key = %DerivedWeirdKey{}
     assert to_json(derived_weird_key) == ~s({"_":null})
