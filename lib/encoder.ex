@@ -75,6 +75,8 @@ defprotocol Jason.Encoder do
 end
 
 defimpl Jason.Encoder, for: Any do
+  @derive_options [:only, :except]
+
   defmacro __deriving__(module, struct, opts) do
     fields = fields_to_encode(struct, opts)
     kv = Enum.map(fields, &{&1, generated_var(&1)})
@@ -138,6 +140,8 @@ defimpl Jason.Encoder, for: Any do
   end
 
   defp fields_to_encode(struct, opts) do
+    validate_deriving_options!(opts)
+
     fields = Map.keys(struct)
 
     cond do
@@ -167,6 +171,18 @@ defimpl Jason.Encoder, for: Any do
 
       true ->
         fields -- [:__struct__]
+    end
+  end
+
+  defp validate_deriving_options!(opts) do
+    case Keyword.keys(opts) -- @derive_options do
+      [] ->
+        :ok
+
+      invalid_options ->
+        raise ArgumentError,
+              "invalid option(s) for deriving Jason.Encoder: #{inspect(invalid_options)}. " <>
+                "Accepted options are :only and :except"
     end
   end
 end
