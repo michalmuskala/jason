@@ -190,6 +190,21 @@ defmodule Jason.EncoderTest do
     end
   end
 
+  test "@derive validate options" do
+    message =
+      "invalid option(s) for deriving Jason.Encoder: [:invalid]. " <>
+        "Accepted options are :only and :except"
+
+    assert_raise ArgumentError, message, fn ->
+      Code.eval_string("""
+      defmodule InvalidDeriveOption do
+        @derive {Jason.Encoder, invalid: [:__meta__]}
+        defstruct [:__meta__, :name]
+      end
+      """)
+    end
+  end
+
   defmodule KeywordTester do
     defstruct [:baz, :foo, :quux]
   end
